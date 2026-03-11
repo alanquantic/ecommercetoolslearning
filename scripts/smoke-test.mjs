@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { buildMockAiAnalysis } from "../lib/ai-analysis.js";
+import { buildMockProductWireframe } from "../lib/product-wireframe.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +37,7 @@ page.on("pageerror", (error) => {
 
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
-  await expectVisible(page.locator("text=Diagnostica la mejor ruta"));
+  await expectVisible(page.locator("text=Aprende a construir un e-commerce"));
   await page.screenshot({ path: path.join(outputDir, "intro.png"), fullPage: true });
 
   await page.locator("#student-name").fill("Andrea López");
@@ -85,6 +86,18 @@ try {
     throw new Error("No se guardó el progreso en localStorage.");
   }
 
+  await page.getByRole("button", { name: /ficha de producto/i }).click();
+  await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
+  await page.locator("#wireframe-product-description").fill("Serum facial con niacinamida para piel grasa y marca propia.");
+  await page.locator("#wireframe-target-customer").fill("Mujeres de 22 a 38 anos que quieren una rutina simple.");
+  await page.locator("#wireframe-price-reference").fill("$699 MXN");
+  await page.locator("#wireframe-differentiator").fill("Formula ligera sin fragancia y con absorcion rapida.");
+  await page.getByRole("button", { name: /generar wireframe/i }).click();
+  await expectVisible(page.getByText("Wireframe sugerido", { exact: true }));
+  await expectVisible(page.getByText("Zona decisiva"));
+  await expectVisible(page.getByText("Objeciones a resolver"));
+  await page.screenshot({ path: path.join(outputDir, "wireframe-producto.png"), fullPage: true });
+
   if (pageErrors.length > 0) {
     throw new Error(`Errores de página detectados: ${pageErrors.join(" | ")}`);
   }
@@ -130,6 +143,14 @@ function createStaticServer(rootPath) {
       if (request.method === "POST" && requestPath === "/api/send-summary") {
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/product-wireframe") {
+        const body = await readRequestBody(request);
+        const result = buildMockProductWireframe(body.brief);
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", model: "mock", result }));
         return;
       }
 

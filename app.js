@@ -5,9 +5,18 @@ import {
   normalizeAiState,
   requestAiAnalysis,
 } from "./lib/ai-analysis.js";
+import {
+  buildProductWireframeInputHash,
+  buildProductWireframePrompt,
+  createDefaultProductWireframeState,
+  normalizeBrief,
+  normalizeProductWireframeState,
+  requestProductWireframe,
+} from "./lib/product-wireframe.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
+const VALID_TOOLS = new Set(["diagnosis", "wireframe"]);
 
 const questions = [
   {
@@ -271,6 +280,7 @@ const profileCatalog = {
 };
 
 const defaultState = {
+  activeTool: "diagnosis",
   stage: "intro",
   currentQuestionIndex: 0,
   answers: Array(questions.length).fill(null),
@@ -291,6 +301,7 @@ const defaultState = {
     reportHash: "",
     message: "",
   },
+  wireframe: createDefaultProductWireframeState(),
 };
 
 let state = loadState();
@@ -314,6 +325,7 @@ function loadState() {
     return {
       ...structuredClone(defaultState),
       ...parsed,
+      activeTool: sanitizeTool(parsed.activeTool),
       answers: normalizeAnswers(parsed.answers),
       intake: {
         ...defaultState.intake,
@@ -322,6 +334,7 @@ function loadState() {
       },
       ai: normalizeAiState(parsed.ai),
       delivery: normalizeDeliveryState(parsed.delivery),
+      wireframe: normalizeProductWireframeState(parsed.wireframe),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -353,10 +366,20 @@ function persistState() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function sanitizeTool(value) {
+  return VALID_TOOLS.has(value) ? value : "diagnosis";
+}
+
 function invalidateAiState() {
   aiRequestId += 1;
   state.ai = createDefaultAiState();
   state.delivery = structuredClone(defaultState.delivery);
+}
+
+function invalidateWireframeState(preserveBrief = true) {
+  const nextState = createDefaultProductWireframeState();
+  nextState.brief = preserveBrief ? normalizeBrief(state.wireframe.brief) : { ...nextState.brief };
+  state.wireframe = nextState;
 }
 
 function resetState() {
@@ -371,7 +394,49 @@ function clearIntake() {
   persistState();
 }
 
+function buildToolSwitcherMarkup() {
+  return `
+    <nav class="tool-switcher" aria-label="Herramientas disponibles">
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="diagnosis"
+        data-active="${state.activeTool === "diagnosis"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 1</span>
+        <strong>Diagnostico de ruta</strong>
+        <span>Decide entre tienda propia, marketplace o modelo hibrido.</span>
+      </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="wireframe"
+        data-active="${state.activeTool === "wireframe"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 2</span>
+        <strong>Ficha de producto</strong>
+        <span>Genera un wireframe ideal para una pagina que convierta mejor.</span>
+      </button>
+    </nav>
+  `;
+}
+
+function renderToolShell(screenMarkup) {
+  appRoot.innerHTML = `
+    ${buildToolSwitcherMarkup()}
+    ${screenMarkup}
+  `;
+}
+
 function render() {
+  if (state.activeTool === "wireframe") {
+    renderWireframeTool();
+    return;
+  }
+
   if (state.stage === "quiz") {
     renderQuestion();
     animateStaticProgress();
@@ -392,7 +457,7 @@ function renderIntro() {
   const answeredCount = getAnsweredCount();
   const startLabel = answeredCount > 0 ? "Retomar diagnóstico" : "Iniciar diagnóstico";
 
-  appRoot.innerHTML = `
+  renderToolShell(`
     <section class="screen panel-enter">
       <div class="intro-grid">
         <article class="surface-card intro-copy">
@@ -557,7 +622,7 @@ function renderIntro() {
         </article>
       </div>
     </section>
-  `;
+  `);
 }
 
 function renderQuestion() {
@@ -585,7 +650,7 @@ function renderQuestion() {
     })
     .join("");
 
-  appRoot.innerHTML = `
+  renderToolShell(`
     <section class="screen panel-enter">
       <header class="question-header">
         <div>
@@ -634,7 +699,7 @@ function renderQuestion() {
         </button>
       </div>
     </section>
-  `;
+  `);
 }
 
 function renderResult() {
@@ -652,7 +717,7 @@ function renderResult() {
   const summaryItems = buildProfileSummaryMarkup();
   const businessContextItems = buildBusinessContextMarkup();
 
-  appRoot.innerHTML = `
+  renderToolShell(`
     <section class="screen panel-enter">
       <div class="result-hero">
         <div class="result-pill">${escapeHtml(profile.pill)}</div>
@@ -764,52 +829,338 @@ function renderResult() {
 
       ${buildDeliveryStatusMarkup(deliveryStatus)}
     </section>
+  `);
+}
+
+function renderWireframeTool() {
+  const brief = state.wireframe.brief;
+
+  renderToolShell(`
+    <section class="screen panel-enter">
+      <div class="intro-grid wireframe-intro-grid">
+        <article class="surface-card intro-copy">
+          <p class="eyebrow">Diapositiva 20</p>
+          <h2>La ficha de producto: donde la duda se convierte en decision.</h2>
+          <p class="text-muted">
+            La ficha no debe limitarse a describir. Debe responder preguntas, reducir objeciones
+            y facilitar la compra. Describe un producto y te sugeriremos una estructura ideal.
+          </p>
+
+          <div class="info-grid">
+            <div class="mini-card">
+              <strong>Objetivo</strong>
+              <span>Mostrar la ficha como punto decisivo de la conversion.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Enfoque</strong>
+              <span>Priorizar lo que ayuda a decidir: evidencia, claridad y CTA visible.</span>
+            </div>
+          </div>
+
+          <ul class="mini-list">
+            <li>Titulo claro, precio visible y beneficios concretos.</li>
+            <li>Fotografias utiles, variantes y disponibilidad sin ambiguedad.</li>
+            <li>CTA visible, preguntas frecuentes y senales de confianza.</li>
+          </ul>
+        </article>
+
+        <article class="surface-card">
+          <p class="eyebrow">Describe el producto</p>
+          <form id="wireframe-form" class="form-stack">
+            <p class="field-help">
+              Con una descripcion simple ya podemos sugerir una ficha mas util. Si agregas contexto, el wireframe mejora.
+            </p>
+
+            <div class="field">
+              <label for="wireframe-product-description">
+                Producto o descripcion
+                <span class="required-pill">Obligatorio</span>
+              </label>
+              <textarea
+                id="wireframe-product-description"
+                name="productDescription"
+                maxlength="500"
+                required
+                aria-required="true"
+                placeholder="Ej. Serum facial con niacinamida para piel grasa, pensado para rutina diaria y venta en marca propia"
+              >${escapeHtml(brief.productDescription)}</textarea>
+            </div>
+
+            <div class="field">
+              <label for="wireframe-target-customer">A quien se lo vendes</label>
+              <textarea
+                id="wireframe-target-customer"
+                name="targetCustomer"
+                maxlength="260"
+                placeholder="Ej. Mujeres de 22 a 38 anos que buscan control de brillo y cuidado simple"
+              >${escapeHtml(brief.targetCustomer)}</textarea>
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="wireframe-price-reference">Precio o rango</label>
+                <input
+                  id="wireframe-price-reference"
+                  name="priceReference"
+                  type="text"
+                  maxlength="60"
+                  placeholder="Ej. $699 MXN"
+                  value="${escapeHtml(brief.priceReference)}"
+                >
+              </div>
+
+              <div class="field">
+                <label for="wireframe-differentiator">Diferencial principal</label>
+                <input
+                  id="wireframe-differentiator"
+                  name="differentiator"
+                  type="text"
+                  maxlength="220"
+                  placeholder="Ej. Formula ligera, sin fragancia y con resultados visibles"
+                  value="${escapeHtml(brief.differentiator)}"
+                >
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="button button-primary" type="submit">Generar wireframe</button>
+              <button class="button button-secondary" type="button" data-action="clear-wireframe">
+                Limpiar brief
+              </button>
+            </div>
+          </form>
+        </article>
+      </div>
+
+      ${buildWireframePanelMarkup()}
+    </section>
+  `);
+}
+
+function buildWireframePanelMarkup() {
+  if (state.wireframe.status === "loading") {
+    return `
+      <section class="result-card wireframe-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Wireframe sugerido</p>
+            <h3 class="ai-title">Estamos armando la estructura ideal de tu ficha de producto.</h3>
+          </div>
+          <span class="status-chip status-chip-active">Construyendo</span>
+        </div>
+        <div class="loading-stack" aria-hidden="true">
+          <div class="loading-line loading-line-lg"></div>
+          <div class="loading-line"></div>
+          <div class="loading-line loading-line-sm"></div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.wireframe.status === "error") {
+    return `
+      <section class="result-card wireframe-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Wireframe sugerido</p>
+            <h3 class="ai-title">No pudimos generar la propuesta en este intento.</h3>
+          </div>
+          <button class="button button-secondary" type="button" data-action="retry-wireframe">
+            Reintentar
+          </button>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.wireframe.status !== "ready" || !state.wireframe.result) {
+    return `
+      <section class="result-card wireframe-panel wireframe-empty">
+        <p class="eyebrow">Wireframe sugerido</p>
+        <h3 class="ai-title">Aqui veras una ficha ideal para convertir mejor.</h3>
+        <p class="helper-copy">
+          La propuesta mostrara titulo, precio, beneficios, variantes, disponibilidad,
+          CTA visible, senales de confianza y secciones que resuelven objeciones.
+        </p>
+      </section>
+    `;
+  }
+
+  const result = state.wireframe.result;
+
+  return `
+    <section class="result-card wireframe-panel">
+      <div class="wireframe-header">
+        <div>
+          <p class="eyebrow">Wireframe sugerido</p>
+          <h3 class="ai-title">${escapeHtml(result.wireframeTitle)}</h3>
+          <p class="helper-copy">${escapeHtml(result.decisionMessage)}</p>
+        </div>
+        <div class="status-stack">
+          <span class="status-chip">${escapeHtml(result.pageGoal)}</span>
+        </div>
+      </div>
+
+      <div class="wireframe-board">
+        <article class="wf-card wf-gallery">
+          <span class="wf-label">1. Fotografias utiles</span>
+          <p>${escapeHtml(result.photoNotes[0])}</p>
+          <div class="wf-media-grid">
+            ${result.photoNotes
+              .slice(0, 3)
+              .map((item, index) => `<div class="wf-media-box"><strong>Foto ${index + 1}</strong><span>${escapeHtml(item)}</span></div>`)
+              .join("")}
+          </div>
+        </article>
+
+        <article class="wf-card wf-buybox">
+          <span class="wf-label">2. Zona decisiva</span>
+          <h4>${escapeHtml(result.productTitle)}</h4>
+          <p class="wf-hook">${escapeHtml(result.shortHook)}</p>
+          <div class="wf-price">${escapeHtml(result.pricePresentation)}</div>
+          <div class="wf-pill-row">
+            ${result.variants.map((item) => `<span class="wf-pill">${escapeHtml(item)}</span>`).join("")}
+          </div>
+          <p class="wf-availability">${escapeHtml(result.availability)}</p>
+          <div class="wf-cta-stack">
+            <button class="button button-primary" type="button">${escapeHtml(result.primaryCta)}</button>
+            <button class="button button-secondary" type="button">${escapeHtml(result.secondaryCta)}</button>
+          </div>
+        </article>
+
+        <article class="wf-card">
+          <span class="wf-label">3. Beneficios y atributos</span>
+          <ul class="feature-list">
+            ${result.benefits.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+          <div class="wf-mini-divider"></div>
+          <div class="wf-attribute-grid">
+            ${result.attributes.map((item) => `<span class="wf-attribute">${escapeHtml(item)}</span>`).join("")}
+          </div>
+        </article>
+
+        <article class="wf-card">
+          <span class="wf-label">4. Senales de confianza</span>
+          <div class="tag-grid">
+            ${result.trustSignals.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("")}
+          </div>
+        </article>
+
+        <article class="wf-card">
+          <span class="wf-label">5. Preguntas frecuentes</span>
+          <ol class="action-list">
+            ${result.faq.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ol>
+        </article>
+
+        <article class="wf-card wf-mobile-card">
+          <span class="wf-label">6. Prioridad movil</span>
+          <p>${escapeHtml(result.mobileStickyBar)}</p>
+        </article>
+      </div>
+
+      <div class="wireframe-insight-grid">
+        <article class="bar-card">
+          <h3>Objeciones a resolver</h3>
+          <ul class="summary-list">
+            ${result.objections.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </article>
+
+        <article class="bar-card">
+          <h3>Notas de conversion</h3>
+          <ul class="summary-list">
+            ${result.conversionNotes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </article>
+      </div>
+
+      <div class="footer-actions">
+        <button class="button button-primary" type="button" data-action="copy-wireframe">
+          Copiar guia
+        </button>
+        <button class="button button-secondary" type="button" data-action="download-wireframe">
+          Descargar .txt
+        </button>
+        <button class="button button-ghost" type="button" data-action="reset-wireframe-result">
+          Generar otro
+        </button>
+      </div>
+    </section>
   `;
 }
 
 function handleSubmit(event) {
-  if (event.target.id !== "intake-form") {
-    return;
-  }
+  if (event.target.id === "intake-form") {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const email = sanitizeInput(formData.get("email")).toLowerCase();
+    const emailField = event.target.querySelector("#email");
 
-  event.preventDefault();
-  const formData = new FormData(event.target);
-  const email = sanitizeInput(formData.get("email")).toLowerCase();
-  const emailField = event.target.querySelector("#email");
-
-  if (emailField) {
-    emailField.removeAttribute("aria-invalid");
-  }
-
-  if (!isValidEmail(email)) {
     if (emailField) {
-      emailField.focus();
-      emailField.setAttribute("aria-invalid", "true");
+      emailField.removeAttribute("aria-invalid");
     }
-    showToast("Ingresa un correo valido para continuar.");
+
+    if (!isValidEmail(email)) {
+      if (emailField) {
+        emailField.focus();
+        emailField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Ingresa un correo valido para continuar.");
+      return;
+    }
+
+    state.intake = {
+      studentName: sanitizeInput(formData.get("studentName")),
+      projectName: sanitizeInput(formData.get("projectName")),
+      email,
+      productDescription: sanitizeLongText(formData.get("productDescription"), 500),
+      targetCustomer: sanitizeLongText(formData.get("targetCustomer"), 320),
+      businessModel: sanitizeBusinessModel(formData.get("businessModel")),
+      averageTicket: sanitizeInput(formData.get("averageTicket")),
+      salesChannels: sanitizeLongText(formData.get("salesChannels"), 160),
+      primaryMarket: sanitizeInput(formData.get("primaryMarket")),
+    };
+    invalidateAiState();
+
+    if (getAnsweredCount() === questions.length) {
+      state.stage = "result";
+    } else {
+      state.stage = "quiz";
+    }
+    persistState();
+    render();
     return;
   }
 
-  state.intake = {
-    studentName: sanitizeInput(formData.get("studentName")),
-    projectName: sanitizeInput(formData.get("projectName")),
-    email,
-    productDescription: sanitizeLongText(formData.get("productDescription"), 500),
-    targetCustomer: sanitizeLongText(formData.get("targetCustomer"), 320),
-    businessModel: sanitizeBusinessModel(formData.get("businessModel")),
-    averageTicket: sanitizeInput(formData.get("averageTicket")),
-    salesChannels: sanitizeLongText(formData.get("salesChannels"), 160),
-    primaryMarket: sanitizeInput(formData.get("primaryMarket")),
-  };
-  invalidateAiState();
+  if (event.target.id === "wireframe-form") {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const productField = event.target.querySelector("#wireframe-product-description");
+    const brief = normalizeBrief({
+      productDescription: formData.get("productDescription"),
+      targetCustomer: formData.get("targetCustomer"),
+      priceReference: formData.get("priceReference"),
+      differentiator: formData.get("differentiator"),
+    });
 
-  if (getAnsweredCount() === questions.length) {
-    state.stage = "result";
-  } else {
-    state.stage = "quiz";
+    if (productField) {
+      productField.removeAttribute("aria-invalid");
+    }
+
+    if (!brief.productDescription) {
+      if (productField) {
+        productField.focus();
+        productField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Describe el producto para generar el wireframe.");
+      return;
+    }
+
+    state.wireframe.brief = brief;
+    persistState();
+    generateProductWireframe(true);
   }
-  persistState();
-  render();
 }
 
 function handleClick(event) {
@@ -827,6 +1178,9 @@ function handleClick(event) {
   const { action } = actionButton.dataset;
 
   switch (action) {
+    case "switch-tool":
+      switchTool(actionButton.dataset.tool);
+      break;
     case "next-question":
       goNext();
       break;
@@ -838,14 +1192,29 @@ function handleClick(event) {
       render();
       showToast("Formulario limpiado.");
       break;
+    case "clear-wireframe":
+      invalidateWireframeState(false);
+      persistState();
+      render();
+      showToast("Brief limpiado.");
+      break;
     case "copy-summary":
       copySummary();
+      break;
+    case "copy-wireframe":
+      copyWireframe();
       break;
     case "send-summary":
       sendSummaryByEmail();
       break;
     case "download-summary":
       downloadSummary();
+      break;
+    case "download-wireframe":
+      downloadWireframe();
+      break;
+    case "retry-wireframe":
+      generateProductWireframe(true);
       break;
     case "retry-ai":
       ensureAiAnalysis(true);
@@ -855,6 +1224,12 @@ function handleClick(event) {
       break;
     case "restart-quiz":
       resetState();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "reset-wireframe-result":
+      invalidateWireframeState(true);
+      persistState();
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
       break;
@@ -1144,6 +1519,103 @@ function buildSendButtonLabel(aiStatus, deliveryStatus) {
     return "Preparando resumen...";
   }
   return "Enviar resumen por correo";
+}
+
+function switchTool(nextTool) {
+  const sanitizedTool = sanitizeTool(nextTool);
+  if (sanitizedTool === state.activeTool) {
+    return;
+  }
+
+  state.activeTool = sanitizedTool;
+
+  if (sanitizedTool === "wireframe") {
+    seedWireframeBriefFromDiagnosis();
+  }
+
+  persistState();
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function seedWireframeBriefFromDiagnosis() {
+  const brief = normalizeBrief(state.wireframe.brief);
+  if (brief.productDescription) {
+    return;
+  }
+
+  const seededBrief = normalizeBrief({
+    productDescription: state.intake.productDescription,
+    targetCustomer: state.intake.targetCustomer,
+    priceReference: state.intake.averageTicket,
+    differentiator: "",
+  });
+
+  if (!seededBrief.productDescription) {
+    return;
+  }
+
+  state.wireframe.brief = seededBrief;
+}
+
+function generateProductWireframe(force = false) {
+  const brief = normalizeBrief(state.wireframe.brief);
+  if (!brief.productDescription) {
+    return;
+  }
+
+  const inputHash = buildProductWireframeInputHash(brief);
+  if (!force) {
+    if (state.wireframe.status === "loading" && state.wireframe.inputHash === inputHash) {
+      return;
+    }
+    if (state.wireframe.status === "ready" && state.wireframe.inputHash === inputHash) {
+      return;
+    }
+  }
+
+  const prompt = buildProductWireframePrompt(brief);
+  state.wireframe = {
+    brief,
+    status: "loading",
+    result: null,
+    prompt,
+    inputHash,
+  };
+  persistState();
+  render();
+
+  requestProductWireframe(brief)
+    .then((result) => {
+      if (state.wireframe.inputHash !== inputHash) {
+        return;
+      }
+
+      state.wireframe = {
+        brief,
+        status: "ready",
+        result,
+        prompt,
+        inputHash,
+      };
+      persistState();
+      render();
+    })
+    .catch(() => {
+      if (state.wireframe.inputHash !== inputHash) {
+        return;
+      }
+
+      state.wireframe = {
+        brief,
+        status: "error",
+        result: null,
+        prompt,
+        inputHash,
+      };
+      persistState();
+      render();
+    });
 }
 
 function ensureAiAnalysis(force = false) {
@@ -1449,6 +1921,64 @@ function buildSummaryText() {
   return lines.join("\n");
 }
 
+function buildWireframeSummaryText() {
+  const brief = normalizeBrief(state.wireframe.brief);
+  const result = state.wireframe.result;
+  if (state.wireframe.status !== "ready" || !result) {
+    return "Aun no hay wireframe generado.";
+  }
+
+  const lines = [
+    "Wireframe sugerido de ficha de producto",
+    "======================================",
+    `Producto descrito: ${brief.productDescription}`,
+    `Cliente ideal: ${brief.targetCustomer || "No especificado"}`,
+    `Precio o rango: ${brief.priceReference || "No especificado"}`,
+    `Diferencial: ${brief.differentiator || "No especificado"}`,
+    "",
+    `Titulo del wireframe: ${result.wireframeTitle}`,
+    `Objetivo de la pagina: ${result.pageGoal}`,
+    `Mensaje central: ${result.decisionMessage}`,
+    "",
+    "Zona principal:",
+    `- Titulo: ${result.productTitle}`,
+    `- Hook: ${result.shortHook}`,
+    `- Precio: ${result.pricePresentation}`,
+    `- Disponibilidad: ${result.availability}`,
+    `- CTA principal: ${result.primaryCta}`,
+    `- CTA secundario: ${result.secondaryCta}`,
+    "",
+    "Beneficios sugeridos:",
+    ...result.benefits.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Fotografias utiles:",
+    ...result.photoNotes.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Variantes visibles:",
+    ...result.variants.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Senales de confianza:",
+    ...result.trustSignals.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Atributos o bloques informativos:",
+    ...result.attributes.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "FAQ sugeridas:",
+    ...result.faq.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Objeciones a resolver:",
+    ...result.objections.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Prioridad movil:",
+    result.mobileStickyBar,
+    "",
+    "Notas de conversion:",
+    ...result.conversionNotes.map((item, index) => `${index + 1}. ${item}`),
+  ];
+
+  return lines.join("\n");
+}
+
 function copySummary() {
   const text = buildSummaryText();
   if (!navigator.clipboard || !navigator.clipboard.writeText) {
@@ -1487,6 +2017,49 @@ function downloadSummary() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("Resumen descargado.");
+}
+
+function copyWireframe() {
+  const text = buildWireframeSummaryText();
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    downloadWireframe();
+    showToast("No se pudo copiar. Se descargo la guia.");
+    return;
+  }
+
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast("Guia de ficha copiada al portapapeles."))
+    .catch(() => {
+      downloadWireframe();
+      showToast("No se pudo copiar. Se descargo la guia.");
+    });
+}
+
+function downloadWireframe() {
+  const text = buildWireframeSummaryText();
+  const slugBase =
+    state.wireframe.result?.productTitle ||
+    state.wireframe.brief.productDescription ||
+    "ficha-producto";
+  const slug = slugBase
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 48) || "ficha-producto";
+
+  const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-wireframe-ficha.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Guia descargada.");
 }
 
 function animateStaticProgress() {

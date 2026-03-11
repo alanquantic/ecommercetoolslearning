@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Carrito de compras">
+  <defs>
+    <linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#f28c28"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="#fff8ef"/>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="url(#bg)" opacity=".14"/>
+  <path
+    d="M20 19h5l3.1 18.4a3 3 0 0 0 3 2.5h13.4a3 3 0 0 0 2.9-2.2l3-10.7H27.8"
+    fill="none"
+    stroke="#0b5d56"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="4"
+  />
+  <circle cx="32" cy="47" r="3.8" fill="#0b5d56"/>
+  <circle cx="45" cy="47" r="3.8" fill="#0b5d56"/>
+  <path d="M24 24h30" fill="none" stroke="#f28c28" stroke-linecap="round" stroke-width="4"/>
+</svg>

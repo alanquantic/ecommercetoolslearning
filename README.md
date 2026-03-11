@@ -36,6 +36,7 @@ Esto:
 ## Lo que ya hace
 
 - Diagnostica entre tienda propia, marketplace o modelo híbrido.
+- Genera wireframes sugeridos para fichas de producto a partir de una descripcion.
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
