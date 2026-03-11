@@ -2,7 +2,7 @@ import OpenAI from "openai";
 
 import { buildAiPrompt, buildMockAiAnalysis, normalizeAiAnalysisResult } from "../lib/ai-analysis.js";
 
-const DEFAULT_OPENAI_MODEL = "gpt-5.2";
+const DEFAULT_OPENAI_MODEL = "gpt-5.4";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {

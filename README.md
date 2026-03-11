@@ -58,7 +58,7 @@ Variables esperadas:
 
 Nota:
 
-- El codigo acepta el modelo por `OPENAI_MODEL`, pero si ese nombre no existe en la API hace fallback a `gpt-5.2`.
+- El codigo acepta el modelo por `OPENAI_MODEL`, pero si ese nombre no existe en la API hace fallback a `gpt-5.4`.
 
 ## Vercel
 
@@ -79,8 +79,7 @@ La integracion ya vive en `api/`. Para que funcione en deploy, las variables de 
 
 ## Lo que falta para la siguiente fase
 
-- Envío real de correos.
 - Captura de leads en backend.
-- Sustituir el mock de IA por una ruta segura en Vercel.
+- Panel o log interno para consultar diagnosticos enviados.
 - Persistencia compartida entre dispositivos.
-- Preparación formal para despliegue en Vercel.
+- Afinar prompts, guardrails y trazabilidad del analisis de IA.
