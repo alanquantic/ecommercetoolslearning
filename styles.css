@@ -332,6 +332,20 @@ button {
   font-weight: 600;
 }
 
+.required-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(242, 140, 40, 0.14);
+  color: var(--warn);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .field input,
 .field textarea,
 .field select {
@@ -361,6 +375,11 @@ button {
   outline: none;
   border-color: rgba(15, 118, 110, 0.5);
   box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
+.field input[aria-invalid="true"] {
+  border-color: rgba(194, 65, 12, 0.64);
+  box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.12);
 }
 
 .field-help {

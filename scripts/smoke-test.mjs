@@ -39,13 +39,20 @@ try {
 
   await page.locator("#student-name").fill("Andrea López");
   await page.locator("#project-name").fill("Skin Routine Lab");
-  await page.locator("#email").fill("andrea@example.com");
   await page.locator("#product-description").fill("Skincare facial de marca propia con kits para piel sensible.");
   await page.locator("#target-customer").fill("Mujeres de 25 a 40 años que compran por Instagram y recomendacion.");
   await page.locator("#business-model").selectOption("marca-propia");
   await page.locator("#average-ticket").fill("$899 MXN");
   await page.locator("#sales-channels").fill("Instagram y WhatsApp");
   await page.locator("#primary-market").fill("Mexico");
+
+  await page.getByRole("button", { name: /iniciar diagnóstico/i }).click();
+  const emailIsInvalid = await page.locator("#email").evaluate((element) => !element.checkValidity());
+  if (!emailIsInvalid) {
+    throw new Error("El correo debería ser obligatorio antes de comenzar el diagnóstico.");
+  }
+
+  await page.locator("#email").fill("andrea@example.com");
   await page.getByRole("button", { name: /iniciar diagnóstico/i }).click();
 
   for (let index = 0; index < 7; index += 1) {

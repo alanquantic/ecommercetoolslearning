@@ -422,7 +422,7 @@ function renderIntro() {
 
         <article class="surface-card">
           <p class="eyebrow">Personaliza tu reporte</p>
-          <form id="intake-form" class="form-stack" novalidate>
+          <form id="intake-form" class="form-stack">
             <p class="field-help">
               Mientras mas especifico seas sobre lo que vendes y a quien le vendes, mas util sera la lectura final.
             </p>
@@ -452,18 +452,24 @@ function renderIntro() {
             </div>
 
             <div class="field">
-              <label for="email">Correo (opcional)</label>
+              <label for="email">
+                Correo
+                <span class="required-pill">Obligatorio</span>
+              </label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 inputmode="email"
+                autocomplete="email"
                 maxlength="120"
+                required
+                aria-required="true"
                 placeholder="tu@correo.com"
                 value="${escapeHtml(state.intake.email)}"
               >
               <p class="field-help">
-                Es opcional y sirve para personalizar tu resumen final.
+                Es obligatorio para continuar. Despues lo usaremos para enviarte el resumen del diagnostico.
               </p>
             </div>
 
@@ -749,11 +755,26 @@ function handleSubmit(event) {
 
   event.preventDefault();
   const formData = new FormData(event.target);
+  const email = sanitizeInput(formData.get("email")).toLowerCase();
+  const emailField = event.target.querySelector("#email");
+
+  if (emailField) {
+    emailField.removeAttribute("aria-invalid");
+  }
+
+  if (!isValidEmail(email)) {
+    if (emailField) {
+      emailField.focus();
+      emailField.setAttribute("aria-invalid", "true");
+    }
+    showToast("Ingresa un correo valido para continuar.");
+    return;
+  }
 
   state.intake = {
     studentName: sanitizeInput(formData.get("studentName")),
     projectName: sanitizeInput(formData.get("projectName")),
-    email: sanitizeInput(formData.get("email")),
+    email,
     productDescription: sanitizeLongText(formData.get("productDescription"), 500),
     targetCustomer: sanitizeLongText(formData.get("targetCustomer"), 320),
     businessModel: sanitizeBusinessModel(formData.get("businessModel")),
@@ -836,6 +857,10 @@ function sanitizeLongText(value, maxLength) {
 
 function sanitizeBusinessModel(value) {
   return VALID_BUSINESS_MODELS.has(value) ? value : "no-definido";
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
 }
 
 function selectOption(type) {
