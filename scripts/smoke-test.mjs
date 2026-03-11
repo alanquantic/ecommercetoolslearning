@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
+import { buildMockAiAnalysis } from "../lib/ai-analysis.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
@@ -64,6 +66,8 @@ try {
   await expectVisible(page.getByRole("heading", { name: "Stack sugerido" }));
   await expectVisible(page.getByText("Lectura personalizada"));
   await expectVisible(page.getByText("Primer experimento sugerido"));
+  await page.getByRole("button", { name: /enviar resumen por correo/i }).click();
+  await expectVisible(page.getByText("El resumen se envio"));
   await page.screenshot({ path: path.join(outputDir, "result-marketplace.png"), fullPage: true });
 
   const [download] = await Promise.all([
@@ -114,6 +118,21 @@ function createStaticServer(rootPath) {
   return http.createServer(async (request, response) => {
     try {
       const requestPath = decodeURIComponent(new URL(request.url || "/", "http://127.0.0.1").pathname);
+
+      if (request.method === "POST" && requestPath === "/api/analyze") {
+        const body = await readRequestBody(request);
+        const analysis = buildMockAiAnalysis(body.context);
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", model: "mock", analysis }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/send-summary") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
+        return;
+      }
+
       const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
       const filePath = path.normalize(path.join(rootPath, normalizedPath));
       const relativePath = path.relative(rootPath, filePath);
@@ -139,6 +158,19 @@ function createStaticServer(rootPath) {
       response.end(error.code === "ENOENT" ? "Not found" : "Server error");
     }
   });
+}
+
+async function readRequestBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  } catch (error) {
+    return {};
+  }
 }
 
 async function startServer(serverInstance) {

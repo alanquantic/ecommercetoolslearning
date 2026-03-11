@@ -286,6 +286,11 @@ const defaultState = {
     primaryMarket: "",
   },
   ai: createDefaultAiState(),
+  delivery: {
+    status: "idle",
+    reportHash: "",
+    message: "",
+  },
 };
 
 let state = loadState();
@@ -316,6 +321,7 @@ function loadState() {
         businessModel: sanitizeBusinessModel(parsed.intake?.businessModel),
       },
       ai: normalizeAiState(parsed.ai),
+      delivery: normalizeDeliveryState(parsed.delivery),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -350,6 +356,7 @@ function persistState() {
 function invalidateAiState() {
   aiRequestId += 1;
   state.ai = createDefaultAiState();
+  state.delivery = structuredClone(defaultState.delivery);
 }
 
 function resetState() {
@@ -637,6 +644,8 @@ function renderResult() {
   const currentAiHash = buildAiInputHash(aiContext);
   const aiStatus = state.ai.inputHash === currentAiHash ? state.ai.status : "idle";
   const aiAnalysis = aiStatus === "ready" ? state.ai.analysis : null;
+  const reportHash = aiAnalysis ? buildReportHash(currentAiHash, aiAnalysis) : "";
+  const deliveryStatus = state.delivery.reportHash === reportHash ? state.delivery.status : "idle";
   const studentName = state.intake.studentName.trim();
   const projectName = state.intake.projectName.trim();
   const reportOwner = studentName || projectName || "Diagnóstico listo";
@@ -731,6 +740,14 @@ function renderResult() {
       </div>
 
       <div class="footer-actions">
+        <button
+          class="button button-primary"
+          type="button"
+          data-action="send-summary"
+          ${aiStatus !== "ready" || deliveryStatus === "sending" || deliveryStatus === "sent" ? "disabled" : ""}
+        >
+          ${buildSendButtonLabel(aiStatus, deliveryStatus)}
+        </button>
         <button class="button button-primary" type="button" data-action="copy-summary">
           Copiar resumen
         </button>
@@ -744,6 +761,8 @@ function renderResult() {
           Nuevo diagnóstico
         </button>
       </div>
+
+      ${buildDeliveryStatusMarkup(deliveryStatus)}
     </section>
   `;
 }
@@ -822,6 +841,9 @@ function handleClick(event) {
     case "copy-summary":
       copySummary();
       break;
+    case "send-summary":
+      sendSummaryByEmail();
+      break;
     case "download-summary":
       downloadSummary();
       break;
@@ -861,6 +883,19 @@ function sanitizeBusinessModel(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+}
+
+function normalizeDeliveryState(value) {
+  if (!value || typeof value !== "object") {
+    return structuredClone(defaultState.delivery);
+  }
+
+  const status = ["idle", "sending", "sent", "error"].includes(value.status) ? value.status : "idle";
+  return {
+    status,
+    reportHash: String(value.reportHash || ""),
+    message: String(value.message || ""),
+  };
 }
 
 function selectOption(type) {
@@ -1066,6 +1101,51 @@ function buildBusinessContextMarkup() {
   return contextItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
+function buildDeliveryStatusMarkup(deliveryStatus) {
+  if (deliveryStatus === "sent") {
+    return `
+      <p class="delivery-note">
+        El resumen se envio a ${escapeHtml(state.intake.email)} y tambien se compartio con el profesor.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "error") {
+    return `
+      <p class="delivery-note delivery-note-error">
+        No se pudo enviar el resumen por correo. Puedes intentarlo de nuevo.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "sending") {
+    return `
+      <p class="delivery-note">
+        Enviando resumen a tu correo y al profesor...
+      </p>
+    `;
+  }
+
+  return `
+    <p class="delivery-note">
+      Cuando este listo, enviaremos este resumen a ${escapeHtml(state.intake.email)} y al profesor.
+    </p>
+  `;
+}
+
+function buildSendButtonLabel(aiStatus, deliveryStatus) {
+  if (deliveryStatus === "sending") {
+    return "Enviando correo...";
+  }
+  if (deliveryStatus === "sent") {
+    return "Resumen enviado";
+  }
+  if (aiStatus !== "ready") {
+    return "Preparando resumen...";
+  }
+  return "Enviar resumen por correo";
+}
+
 function ensureAiAnalysis(force = false) {
   if (state.stage !== "result" || getAnsweredCount() !== questions.length) {
     return;
@@ -1129,6 +1209,74 @@ function ensureAiAnalysis(force = false) {
       persistState();
       render();
     });
+}
+
+function buildReportHash(aiHash, aiAnalysis) {
+  return JSON.stringify({
+    aiHash,
+    headline: aiAnalysis?.headline || "",
+    recipient: state.intake.email || "",
+  });
+}
+
+async function sendSummaryByEmail() {
+  const analysis = calculateAnalysis();
+  const aiContext = buildAiContext(analysis);
+  const currentAiHash = buildAiInputHash(aiContext);
+  const aiAnalysis = state.ai.inputHash === currentAiHash && state.ai.status === "ready" ? state.ai.analysis : null;
+
+  if (!aiAnalysis) {
+    showToast("Espera a que termine el analisis inteligente.");
+    return;
+  }
+
+  const reportHash = buildReportHash(currentAiHash, aiAnalysis);
+  if (state.delivery.status === "sending" && state.delivery.reportHash === reportHash) {
+    return;
+  }
+
+  state.delivery = {
+    status: "sending",
+    reportHash,
+    message: "",
+  };
+  persistState();
+  render();
+
+  try {
+    const response = await fetch("/api/send-summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        report: buildEmailReportPayload(analysis, aiAnalysis),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Send summary failed with status ${response.status}`);
+    }
+
+    const payload = await response.json();
+    state.delivery = {
+      status: "sent",
+      reportHash,
+      message: payload.mode || "sent",
+    };
+    persistState();
+    render();
+    showToast("Resumen enviado por correo.");
+  } catch (error) {
+    state.delivery = {
+      status: "error",
+      reportHash,
+      message: String(error?.message || "send-error"),
+    };
+    persistState();
+    render();
+    showToast("No se pudo enviar el resumen. Intenta de nuevo.");
+  }
 }
 
 function calculateAnalysis() {
@@ -1202,6 +1350,28 @@ function buildProfileSummaryMarkup() {
       `;
     })
     .join("");
+}
+
+function buildEmailReportPayload(analysis, aiAnalysis) {
+  const profile = profileCatalog[analysis.recommendation];
+
+  return {
+    studentName: state.intake.studentName || "",
+    studentEmail: state.intake.email || "",
+    projectName: state.intake.projectName || "",
+    productDescription: state.intake.productDescription || "",
+    targetCustomer: state.intake.targetCustomer || "",
+    businessModel: state.intake.businessModel || "no-definido",
+    businessModelLabel: translateBusinessModel(state.intake.businessModel),
+    averageTicket: state.intake.averageTicket || "",
+    salesChannels: state.intake.salesChannels || "",
+    primaryMarket: state.intake.primaryMarket || "",
+    profile,
+    baseAnalysis: analysis,
+    aiAnalysis,
+    appBaseUrl: window.location.origin,
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 function buildSummaryText() {

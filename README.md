@@ -39,8 +39,26 @@ Esto:
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
-- Genera una lectura personalizada con una capa de IA mock lista para conectar a backend.
+- Genera una lectura personalizada con OpenAI desde `api/analyze` y conserva fallback local.
+- Permite enviar el resumen por correo con Resend desde `api/send-summary`.
 - Permite copiar, descargar o imprimir el resumen.
+
+## Variables de entorno
+
+Revisa `.env.example`.
+
+Variables esperadas:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `REPORT_RECIPIENTS`
+- `APP_BASE_URL`
+
+Nota:
+
+- El codigo acepta el modelo por `OPENAI_MODEL`, pero si ese nombre no existe en la API hace fallback a `gpt-5.2`.
 
 ## Vercel
 
@@ -57,7 +75,7 @@ Configuracion recomendada en Vercel:
 - Build Command: vacio
 - Output Directory: vacio
 
-Si luego agregamos la integracion real con OpenAI, la idea es montar funciones en `api/` y guardar la API key en variables de entorno de Vercel.
+La integracion ya vive en `api/`. Para que funcione en deploy, las variables de entorno deben existir en Vercel.
 
 ## Lo que falta para la siguiente fase
 
