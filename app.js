@@ -995,6 +995,10 @@ function buildWireframePanelMarkup() {
           <p class="eyebrow">Wireframe sugerido</p>
           <h3 class="ai-title">${escapeHtml(result.wireframeTitle)}</h3>
           <p class="helper-copy">${escapeHtml(result.decisionMessage)}</p>
+          <div class="tag-grid">
+            <span class="tag">${escapeHtml(result.categoryLabel || "Producto")}</span>
+            <span class="tag">${escapeHtml(result.audienceLabel || "Cliente objetivo")}</span>
+          </div>
         </div>
         <div class="status-stack">
           <span class="status-chip">${escapeHtml(result.pageGoal)}</span>
@@ -1004,11 +1008,14 @@ function buildWireframePanelMarkup() {
       <div class="wireframe-board">
         <article class="wf-card wf-gallery">
           <span class="wf-label">1. Fotografias utiles</span>
-          <p>${escapeHtml(result.photoNotes[0])}</p>
+          <div class="wf-hero-media">
+            <strong>Hero principal</strong>
+            <span>${escapeHtml(result.photoNotes[0])}</span>
+          </div>
           <div class="wf-media-grid">
             ${result.photoNotes
-              .slice(0, 3)
-              .map((item, index) => `<div class="wf-media-box"><strong>Foto ${index + 1}</strong><span>${escapeHtml(item)}</span></div>`)
+              .slice(1, 4)
+              .map((item, index) => `<div class="wf-media-box"><strong>Apoyo ${index + 1}</strong><span>${escapeHtml(item)}</span></div>`)
               .join("")}
           </div>
         </article>
@@ -1018,6 +1025,9 @@ function buildWireframePanelMarkup() {
           <h4>${escapeHtml(result.productTitle)}</h4>
           <p class="wf-hook">${escapeHtml(result.shortHook)}</p>
           <div class="wf-price">${escapeHtml(result.pricePresentation)}</div>
+          <div class="wf-proof-list">
+            ${result.proofPoints.map((item) => `<div class="wf-proof-item">${escapeHtml(item)}</div>`).join("")}
+          </div>
           <div class="wf-pill-row">
             ${result.variants.map((item) => `<span class="wf-pill">${escapeHtml(item)}</span>`).join("")}
           </div>
@@ -1040,7 +1050,11 @@ function buildWireframePanelMarkup() {
         </article>
 
         <article class="wf-card">
-          <span class="wf-label">4. Senales de confianza</span>
+          <span class="wf-label">4. Casos de uso y confianza</span>
+          <div class="wf-usecase-grid">
+            ${result.useCases.map((item) => `<div class="wf-usecase">${escapeHtml(item)}</div>`).join("")}
+          </div>
+          <div class="wf-mini-divider"></div>
           <div class="tag-grid">
             ${result.trustSignals.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("")}
           </div>
@@ -1056,6 +1070,10 @@ function buildWireframePanelMarkup() {
         <article class="wf-card wf-mobile-card">
           <span class="wf-label">6. Prioridad movil</span>
           <p>${escapeHtml(result.mobileStickyBar)}</p>
+          <div class="wf-mobile-preview">
+            <span>${escapeHtml(result.pricePresentation)}</span>
+            <strong>${escapeHtml(result.primaryCta)}</strong>
+          </div>
         </article>
       </div>
 
@@ -1939,6 +1957,8 @@ function buildWireframeSummaryText() {
     `Titulo del wireframe: ${result.wireframeTitle}`,
     `Objetivo de la pagina: ${result.pageGoal}`,
     `Mensaje central: ${result.decisionMessage}`,
+    `Categoria detectada: ${result.categoryLabel || "No especificada"}`,
+    `Audiencia detectada: ${result.audienceLabel || "No especificada"}`,
     "",
     "Zona principal:",
     `- Titulo: ${result.productTitle}`,
@@ -1959,6 +1979,12 @@ function buildWireframeSummaryText() {
     "",
     "Senales de confianza:",
     ...result.trustSignals.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Casos de uso sugeridos:",
+    ...result.useCases.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Puntos de prueba o evidencia:",
+    ...result.proofPoints.map((item, index) => `${index + 1}. ${item}`),
     "",
     "Atributos o bloques informativos:",
     ...result.attributes.map((item, index) => `${index + 1}. ${item}`),

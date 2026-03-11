@@ -971,12 +971,35 @@ button {
 
 .wf-media-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
+.wf-hero-media {
+  min-height: 260px;
+  border-radius: 22px;
+  border: 1px dashed rgba(15, 118, 110, 0.32);
+  background:
+    radial-gradient(circle at top right, rgba(242, 140, 40, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(213, 243, 238, 0.36), rgba(255, 255, 255, 0.98));
+  padding: 18px;
+  display: grid;
+  align-content: end;
+  gap: 8px;
+}
+
+.wf-hero-media strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.1rem;
+}
+
+.wf-hero-media span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .wf-media-box {
-  min-height: 138px;
+  min-height: 132px;
   border-radius: 18px;
   border: 1px dashed rgba(15, 118, 110, 0.28);
   background:
@@ -1011,6 +1034,22 @@ button {
   background: rgba(242, 140, 40, 0.12);
   color: var(--warn);
   font-weight: 700;
+  font-size: 1.25rem;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.wf-proof-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wf-proof-item {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .wf-pill-row,
@@ -1040,6 +1079,43 @@ button {
 .wf-mini-divider {
   height: 1px;
   background: rgba(15, 23, 42, 0.08);
+}
+
+.wf-usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wf-usecase {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 248, 240, 0.88);
+  border: 1px solid rgba(242, 140, 40, 0.16);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wf-mobile-preview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #152033;
+  color: #fff;
+  margin-top: 8px;
+}
+
+.wf-mobile-preview span {
+  font-weight: 700;
+}
+
+.wf-mobile-preview strong {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
 }
 
 .wireframe-insight-grid {
@@ -1155,7 +1231,8 @@ button {
   }
 
   .tool-switcher,
-  .wf-media-grid {
+  .wf-media-grid,
+  .wf-usecase-grid {
     grid-template-columns: 1fr;
   }
 

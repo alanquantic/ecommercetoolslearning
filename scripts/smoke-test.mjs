@@ -88,12 +88,13 @@ try {
 
   await page.getByRole("button", { name: /ficha de producto/i }).click();
   await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
-  await page.locator("#wireframe-product-description").fill("Serum facial con niacinamida para piel grasa y marca propia.");
-  await page.locator("#wireframe-target-customer").fill("Mujeres de 22 a 38 anos que quieren una rutina simple.");
-  await page.locator("#wireframe-price-reference").fill("$699 MXN");
-  await page.locator("#wireframe-differentiator").fill("Formula ligera sin fragancia y con absorcion rapida.");
+  await page.locator("#wireframe-product-description").fill("Guantes de nitrilo industriales naranjas con textura para uso rudo.");
+  await page.locator("#wireframe-target-customer").fill("Personas del mercado industrial y talleres.");
+  await page.locator("#wireframe-price-reference").fill("399");
+  await page.locator("#wireframe-differentiator").fill("Gran durabilidad.");
   await page.getByRole("button", { name: /generar wireframe/i }).click();
   await expectVisible(page.getByText("Wireframe sugerido", { exact: true }));
+  await expectVisible(page.getByText("Industrial / B2B"));
   await expectVisible(page.getByText("Zona decisiva"));
   await expectVisible(page.getByText("Objeciones a resolver"));
   await page.screenshot({ path: path.join(outputDir, "wireframe-producto.png"), fullPage: true });

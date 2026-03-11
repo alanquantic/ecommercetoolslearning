@@ -8,6 +8,58 @@ import {
 } from "../lib/product-wireframe.js";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5.4";
+const WIREFRAME_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    wireframeTitle: { type: "string" },
+    pageGoal: { type: "string" },
+    decisionMessage: { type: "string" },
+    categoryLabel: { type: "string" },
+    audienceLabel: { type: "string" },
+    productTitle: { type: "string" },
+    shortHook: { type: "string" },
+    pricePresentation: { type: "string" },
+    benefits: { type: "array", items: { type: "string" } },
+    photoNotes: { type: "array", items: { type: "string" } },
+    variants: { type: "array", items: { type: "string" } },
+    availability: { type: "string" },
+    primaryCta: { type: "string" },
+    secondaryCta: { type: "string" },
+    trustSignals: { type: "array", items: { type: "string" } },
+    attributes: { type: "array", items: { type: "string" } },
+    useCases: { type: "array", items: { type: "string" } },
+    proofPoints: { type: "array", items: { type: "string" } },
+    faq: { type: "array", items: { type: "string" } },
+    objections: { type: "array", items: { type: "string" } },
+    mobileStickyBar: { type: "string" },
+    conversionNotes: { type: "array", items: { type: "string" } },
+  },
+  required: [
+    "wireframeTitle",
+    "pageGoal",
+    "decisionMessage",
+    "categoryLabel",
+    "audienceLabel",
+    "productTitle",
+    "shortHook",
+    "pricePresentation",
+    "benefits",
+    "photoNotes",
+    "variants",
+    "availability",
+    "primaryCta",
+    "secondaryCta",
+    "trustSignals",
+    "attributes",
+    "useCases",
+    "proofPoints",
+    "faq",
+    "objections",
+    "mobileStickyBar",
+    "conversionNotes",
+  ],
+};
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {
@@ -45,6 +97,14 @@ export default async function handler(request, response) {
           model: candidate,
           input: prompt,
           max_output_tokens: 1800,
+          text: {
+            format: {
+              type: "json_schema",
+              name: "product_wireframe",
+              strict: true,
+              schema: WIREFRAME_SCHEMA,
+            },
+          },
         });
 
         const parsed = safeParseJson(aiResponse.output_text);
