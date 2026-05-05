@@ -447,6 +447,7 @@ function render() {
     renderResult();
     animateAffinityBars();
     ensureAiAnalysis();
+    ensureAutomaticSummaryDelivery();
     return;
   }
 
@@ -1771,6 +1772,38 @@ async function sendSummaryByEmail() {
     render();
     showToast("No se pudo enviar el resumen. Intenta de nuevo.");
   }
+}
+
+function ensureAutomaticSummaryDelivery() {
+  if (state.stage !== "result" || getAnsweredCount() !== questions.length) {
+    return;
+  }
+
+  const analysis = calculateAnalysis();
+  const aiContext = buildAiContext(analysis);
+  const currentAiHash = buildAiInputHash(aiContext);
+  const aiAnalysis = state.ai.inputHash === currentAiHash && state.ai.status === "ready" ? state.ai.analysis : null;
+
+  if (!aiAnalysis) {
+    return;
+  }
+
+  const reportHash = buildReportHash(currentAiHash, aiAnalysis);
+  if (state.delivery.reportHash === reportHash && ["sending", "sent"].includes(state.delivery.status)) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    const latestAnalysis = calculateAnalysis();
+    const latestContext = buildAiContext(latestAnalysis);
+    const latestHash = buildAiInputHash(latestContext);
+    const latestReady = state.ai.inputHash === latestHash && state.ai.status === "ready";
+    const latestReportHash = latestReady ? buildReportHash(latestHash, state.ai.analysis) : "";
+
+    if (latestReady && latestReportHash === reportHash && state.delivery.status === "idle") {
+      sendSummaryByEmail();
+    }
+  }, 250);
 }
 
 function calculateAnalysis() {

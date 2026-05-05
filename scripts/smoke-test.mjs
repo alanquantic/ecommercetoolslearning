@@ -67,7 +67,6 @@ try {
   await expectVisible(page.getByRole("heading", { name: "Stack sugerido" }));
   await expectVisible(page.getByText("Lectura personalizada"));
   await expectVisible(page.getByText("Primer experimento sugerido"));
-  await page.getByRole("button", { name: /enviar resumen por correo/i }).click();
   await expectVisible(page.getByText("El resumen se envio"));
   await page.screenshot({ path: path.join(outputDir, "result-marketplace.png"), fullPage: true });
 
