@@ -39,6 +39,9 @@ page.on("pageerror", (error) => {
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await expectVisible(page.locator("text=Aprende a construir un e-commerce"));
+  if (!page.url().endsWith("/diagnostico")) {
+    throw new Error(`La ruta inicial debería normalizar a /diagnostico. URL actual: ${page.url()}`);
+  }
   await page.screenshot({ path: path.join(outputDir, "intro.png"), fullPage: true });
 
   await page.locator("#student-name").fill("Andrea López");
@@ -87,6 +90,9 @@ try {
   }
 
   await page.getByRole("button", { name: /ficha de producto/i }).click();
+  if (!page.url().endsWith("/ficha-producto")) {
+    throw new Error(`La ficha de producto debería vivir en /ficha-producto. URL actual: ${page.url()}`);
+  }
   await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
   await page.locator("#wireframe-product-description").fill("Guantes de nitrilo industriales naranjas con textura para uso rudo.");
   await page.locator("#wireframe-target-customer").fill("Personas del mercado industrial y talleres.");
@@ -100,6 +106,9 @@ try {
   await page.screenshot({ path: path.join(outputDir, "wireframe-producto.png"), fullPage: true });
 
   await page.getByRole("button", { name: /mensajes de tienda/i }).click();
+  if (!page.url().endsWith("/mensajes")) {
+    throw new Error(`Mensajes de tienda debería vivir en /mensajes. URL actual: ${page.url()}`);
+  }
   await expectVisible(page.getByRole("heading", { name: /Toda tienda necesita respuestas/ }));
   await page.locator("#messages-student-name").fill("Andrea López");
   await page.locator("#messages-student-email").fill("andrea@example.com");
@@ -120,6 +129,9 @@ try {
   await expectVisible(page.getByRole("heading", { name: "Cambio o devolucion" }));
   await expectVisible(page.getByText("Los mensajes se enviaron"));
   await page.screenshot({ path: path.join(outputDir, "mensajes-tienda.png"), fullPage: true });
+
+  await page.goto(`${baseUrl}/ficha-producto`, { waitUntil: "networkidle" });
+  await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
 
   if (pageErrors.length > 0) {
     throw new Error(`Errores de página detectados: ${pageErrors.join(" | ")}`);
@@ -192,7 +204,9 @@ function createStaticServer(rootPath) {
       }
 
       const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
-      const filePath = path.normalize(path.join(rootPath, normalizedPath));
+      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes"]);
+      const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
+      const filePath = path.normalize(path.join(rootPath, pathToServe));
       const relativePath = path.relative(rootPath, filePath);
 
       if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {

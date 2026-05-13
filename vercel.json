@@ -1,5 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/diagnostico",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ficha-producto",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mensajes",
+      "destination": "/index.html"
+    }
+  ]
 }

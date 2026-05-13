@@ -30,6 +30,12 @@ import {
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
 const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages"]);
+const TOOL_ROUTES = {
+  diagnosis: "/diagnostico",
+  wireframe: "/ficha-producto",
+  messages: "/mensajes",
+};
+const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
 const questions = [
   {
@@ -324,10 +330,15 @@ let aiRequestId = 0;
 const appRoot = document.querySelector("#app-root");
 const toast = document.querySelector("#toast");
 
+syncToolWithLocation({ replaceUnknown: true });
 render();
 
 appRoot.addEventListener("submit", handleSubmit);
 appRoot.addEventListener("click", handleClick);
+window.addEventListener("popstate", () => {
+  syncToolWithLocation({ replaceUnknown: false });
+  render();
+});
 
 function loadState() {
   try {
@@ -385,6 +396,43 @@ function sanitizeTool(value) {
   return VALID_TOOLS.has(value) ? value : "diagnosis";
 }
 
+function getToolFromPath(pathname = window.location.pathname) {
+  const normalizedPath = normalizeRoutePath(pathname);
+  if (normalizedPath === "/") {
+    return "diagnosis";
+  }
+  return ROUTE_TO_TOOL[normalizedPath] || null;
+}
+
+function normalizeRoutePath(pathname) {
+  const normalized = String(pathname || "/").replace(/\/+$/, "");
+  return normalized || "/";
+}
+
+function syncToolWithLocation({ replaceUnknown = false } = {}) {
+  const routeTool = getToolFromPath();
+  state.activeTool = routeTool || "diagnosis";
+
+  const normalizedPath = normalizeRoutePath(window.location.pathname);
+  const shouldReplaceRoot = normalizedPath === "/";
+  const shouldReplaceUnknown = !routeTool && replaceUnknown;
+
+  if (shouldReplaceRoot || shouldReplaceUnknown) {
+    window.history.replaceState({ tool: state.activeTool }, "", TOOL_ROUTES[state.activeTool]);
+  }
+}
+
+function setToolRoute(tool, replace = false) {
+  const route = TOOL_ROUTES[sanitizeTool(tool)];
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === route) {
+    return;
+  }
+
+  const method = replace ? "replaceState" : "pushState";
+  window.history[method]({ tool }, "", route);
+}
+
 function invalidateAiState() {
   aiRequestId += 1;
   state.ai = createDefaultAiState();
@@ -423,6 +471,7 @@ function buildToolSwitcherMarkup() {
         type="button"
         data-action="switch-tool"
         data-tool="diagnosis"
+        data-route="${TOOL_ROUTES.diagnosis}"
         data-active="${state.activeTool === "diagnosis"}"
       >
         <span class="tool-tab-kicker">Herramienta 1</span>
@@ -435,6 +484,7 @@ function buildToolSwitcherMarkup() {
         type="button"
         data-action="switch-tool"
         data-tool="wireframe"
+        data-route="${TOOL_ROUTES.wireframe}"
         data-active="${state.activeTool === "wireframe"}"
       >
         <span class="tool-tab-kicker">Herramienta 2</span>
@@ -447,6 +497,7 @@ function buildToolSwitcherMarkup() {
         type="button"
         data-action="switch-tool"
         data-tool="messages"
+        data-route="${TOOL_ROUTES.messages}"
         data-active="${state.activeTool === "messages"}"
       >
         <span class="tool-tab-kicker">Herramienta 3</span>
@@ -2028,10 +2079,12 @@ function buildSendButtonLabel(aiStatus, deliveryStatus) {
 function switchTool(nextTool) {
   const sanitizedTool = sanitizeTool(nextTool);
   if (sanitizedTool === state.activeTool) {
+    setToolRoute(sanitizedTool);
     return;
   }
 
   state.activeTool = sanitizedTool;
+  setToolRoute(sanitizedTool);
 
   if (sanitizedTool === "wireframe") {
     seedWireframeBriefFromDiagnosis();

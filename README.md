@@ -68,9 +68,16 @@ Nota:
 
 Este proyecto esta preparado para desplegarse como sitio estatico en Vercel.
 
+Rutas publicas:
+
+- `/diagnostico`
+- `/ficha-producto`
+- `/mensajes`
+
 Archivos relevantes:
 
 - `vercel.json` fuerza el preset `Other`.
+- `vercel.json` reescribe las rutas internas hacia `index.html` para que puedan recargarse o compartirse.
 - La app vive en la raiz del repo y no requiere build para desplegarse.
 
 Configuracion recomendada en Vercel:
