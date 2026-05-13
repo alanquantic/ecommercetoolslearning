@@ -39,12 +39,14 @@ Esto:
 - Diagnostica entre tienda propia, marketplace o modelo híbrido.
 - Genera wireframes sugeridos para fichas de producto a partir de una descripcion.
 - Genera mensajes operativos para tienda en linea: bienvenida, producto, precio, pedido, pago, envio, retraso, entrega, postventa y cambios/devoluciones.
+- Genera mensajes de logistica clara para tiempos de entrega, confirmacion de pedido, avisos, retrasos y problemas.
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
 - Genera una lectura personalizada con OpenAI desde `api/analyze` y conserva fallback local.
 - Permite enviar el resumen por correo con Resend desde `api/send-summary`.
 - Permite enviar el kit de mensajes con Resend desde `api/send-store-messages`.
+- Permite enviar el kit de logistica con Resend desde `api/send-logistics-messages`.
 - Permite copiar, descargar o imprimir el resumen.
 
 ## Variables de entorno
@@ -73,6 +75,7 @@ Rutas publicas:
 - `/diagnostico`
 - `/ficha-producto`
 - `/mensajes`
+- `/logistica`
 
 Archivos relevantes:
 

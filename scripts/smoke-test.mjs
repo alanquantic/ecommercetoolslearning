@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import { buildMockAiAnalysis } from "../lib/ai-analysis.js";
 import { buildMockProductWireframe } from "../lib/product-wireframe.js";
 import { buildMockStoreMessages } from "../lib/store-messages.js";
+import { buildMockLogisticsMessages } from "../lib/logistics-messages.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,6 +134,42 @@ try {
   await page.goto(`${baseUrl}/ficha-producto`, { waitUntil: "networkidle" });
   await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
 
+  await page.getByRole("button", { name: /logistica clara/i }).click();
+  if (!page.url().endsWith("/logistica")) {
+    throw new Error(`Logistica clara deberia vivir en /logistica. URL actual: ${page.url()}`);
+  }
+  await expectVisible(page.getByRole("heading", { name: /No prometas rapido/ }));
+  await page.locator("#logistics-student-name").fill("Andrea López");
+  await page.locator("#logistics-student-email").fill("andrea@example.com");
+  await page.locator("#logistics-business-name").fill("Babal Wines");
+  await page.locator("#logistics-product-description").fill("Vinos artesanales boutique de Aguascalientes, botellas de 750 ml.");
+  await page.locator("#logistics-business-type").selectOption("producto_fisico");
+  await page.locator("#logistics-coverage").selectOption("nacional");
+  await page.locator("#logistics-prep-time").selectOption("24 a 48 horas");
+  await page.locator("#logistics-shipping-cost").fill("$150 MXN");
+  await page.locator("#logistics-carriers").fill("DHL y FedEx");
+  await page.locator("#logistics-damage-policy").fill("Revisamos fotos de empaque y producto en 24 horas.");
+  await page.locator('input[name="currentErrors"][value="sin_fecha"]').check();
+  await page.locator('input[name="currentErrors"][value="sin_aviso"]').check();
+  await page.getByRole("button", { name: /generar mensajes claros/i }).click();
+  await expectVisible(page.getByText("Comunicacion logistica para Babal Wines"));
+  await expectVisible(page.getByText("Mensaje debil"));
+  await expectVisible(page.getByRole("heading", { name: "Comunicacion de retraso" }));
+  await expectVisible(page.getByText("Los mensajes logisticos se enviaron"));
+  await page.screenshot({ path: path.join(outputDir, "logistica-clara.png"), fullPage: true });
+
+  const mobilePage = await browser.newPage({ viewport: { width: 390, height: 1200 }, isMobile: true });
+  await mobilePage.goto(`${baseUrl}/logistica`, { waitUntil: "networkidle" });
+  await expectVisible(mobilePage.getByRole("heading", { name: /No prometas rapido/ }));
+  const hasHorizontalOverflow = await mobilePage.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+  );
+  if (hasHorizontalOverflow) {
+    throw new Error("La vista movil de logistica tiene overflow horizontal.");
+  }
+  await mobilePage.screenshot({ path: path.join(outputDir, "logistica-clara-mobile.png"), fullPage: true });
+  await mobilePage.close();
+
   if (pageErrors.length > 0) {
     throw new Error(`Errores de página detectados: ${pageErrors.join(" | ")}`);
   }
@@ -203,8 +240,22 @@ function createStaticServer(rootPath) {
         return;
       }
 
+      if (request.method === "POST" && requestPath === "/api/logistics-messages") {
+        const body = await readRequestBody(request);
+        const result = buildMockLogisticsMessages(body.brief);
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", model: "mock", result }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/send-logistics-messages") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
+        return;
+      }
+
       const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
-      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes"]);
+      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes", "/logistica"]);
       const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
       const filePath = path.normalize(path.join(rootPath, pathToServe));
       const relativePath = path.relative(rootPath, filePath);

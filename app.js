@@ -26,14 +26,29 @@ import {
   translateShippingType,
   translateTone,
 } from "./lib/store-messages.js";
+import {
+  buildLogisticsInputHash,
+  buildLogisticsPrompt,
+  buildLogisticsResultHash,
+  createDefaultLogisticsState,
+  getLogisticsErrorCatalog,
+  getLogisticsPrepOptions,
+  getSelectedErrorLabels,
+  normalizeLogisticsBrief,
+  normalizeLogisticsState,
+  requestLogisticsMessages,
+  translateBusinessType,
+  translateCoverage,
+} from "./lib/logistics-messages.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
-const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages"]);
+const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics"]);
 const TOOL_ROUTES = {
   diagnosis: "/diagnostico",
   wireframe: "/ficha-producto",
   messages: "/mensajes",
+  logistics: "/logistica",
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
@@ -322,6 +337,7 @@ const defaultState = {
   },
   wireframe: createDefaultProductWireframeState(),
   messages: createDefaultStoreMessagesState(),
+  logistics: createDefaultLogisticsState(),
 };
 
 let state = loadState();
@@ -361,6 +377,7 @@ function loadState() {
       delivery: normalizeDeliveryState(parsed.delivery),
       wireframe: normalizeProductWireframeState(parsed.wireframe),
       messages: normalizeStoreMessagesState(parsed.messages),
+      logistics: normalizeLogisticsState(parsed.logistics),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -451,6 +468,12 @@ function invalidateStoreMessagesState(preserveBrief = true) {
   state.messages = nextState;
 }
 
+function invalidateLogisticsState(preserveBrief = true) {
+  const nextState = createDefaultLogisticsState();
+  nextState.brief = preserveBrief ? normalizeLogisticsBrief(state.logistics.brief) : { ...nextState.brief };
+  state.logistics = nextState;
+}
+
 function resetState() {
   state = structuredClone(defaultState);
   aiRequestId += 1;
@@ -504,6 +527,19 @@ function buildToolSwitcherMarkup() {
         <strong>Mensajes de tienda</strong>
         <span>Crea respuestas claras para venta, envio, retrasos y postventa.</span>
       </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="logistics"
+        data-route="${TOOL_ROUTES.logistics}"
+        data-active="${state.activeTool === "logistics"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 4</span>
+        <strong>Logistica clara</strong>
+        <span>Convierte tiempos, guias y retrasos en mensajes confiables.</span>
+      </button>
     </nav>
   `;
 }
@@ -523,6 +559,11 @@ function render() {
 
   if (state.activeTool === "messages") {
     renderStoreMessagesTool();
+    return;
+  }
+
+  if (state.activeTool === "logistics") {
+    renderLogisticsTool();
     return;
   }
 
@@ -1559,6 +1600,352 @@ function buildMessagesPanelMarkup() {
   `;
 }
 
+function renderLogisticsTool() {
+  const brief = state.logistics.brief;
+  const selectedErrors = new Set(brief.currentErrors);
+  const errorCatalog = getLogisticsErrorCatalog();
+
+  renderToolShell(`
+    <section class="screen panel-enter">
+      <div class="intro-grid logistics-intro-grid">
+        <article class="surface-card intro-copy logistics-copy">
+          <p class="eyebrow">Comunicacion logistica</p>
+          <h2>No prometas rapido; promete claro.</h2>
+          <p class="text-muted">
+            La logistica no solo mueve productos. Tambien sostiene la confianza del cliente.
+            Esta herramienta genera mensajes concretos para entrega, guias, retrasos y problemas.
+          </p>
+
+          <div class="info-grid">
+            <div class="mini-card">
+              <strong>Promesa clara</strong>
+              <span>Rangos, costos, responsables, guias y siguientes pasos.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Menos friccion</strong>
+              <span>Respuestas preparadas antes de que el cliente tenga que reclamar.</span>
+            </div>
+          </div>
+
+          <ul class="mini-list">
+            <li>Adapta mensajes para producto fisico, digital o servicio.</li>
+            <li>Detecta errores comunes de comunicacion logistica.</li>
+            <li>Envia el paquete por correo al alumno y al profesor.</li>
+          </ul>
+        </article>
+
+        <article class="surface-card">
+          <p class="eyebrow">Brief logistico</p>
+          <form id="logistics-form" class="form-stack">
+            <div class="form-split">
+              <div class="field">
+                <label for="logistics-student-name">Tu nombre</label>
+                <input
+                  id="logistics-student-name"
+                  name="studentName"
+                  type="text"
+                  maxlength="80"
+                  placeholder="Ej. Andrea Lopez"
+                  value="${escapeHtml(brief.studentName)}"
+                >
+              </div>
+
+              <div class="field">
+                <label for="logistics-student-email">
+                  Correo
+                  <span class="required-pill">Obligatorio</span>
+                </label>
+                <input
+                  id="logistics-student-email"
+                  name="studentEmail"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  maxlength="120"
+                  required
+                  aria-required="true"
+                  placeholder="tu@correo.com"
+                  value="${escapeHtml(brief.studentEmail)}"
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="logistics-business-name">Nombre del negocio</label>
+              <input
+                id="logistics-business-name"
+                name="businessName"
+                type="text"
+                maxlength="90"
+                placeholder="Ej. Babal Wines"
+                value="${escapeHtml(brief.businessName)}"
+              >
+            </div>
+
+            <div class="field">
+              <label for="logistics-product-description">
+                Que vendes
+                <span class="required-pill">Obligatorio</span>
+              </label>
+              <textarea
+                id="logistics-product-description"
+                name="productDescription"
+                maxlength="520"
+                required
+                aria-required="true"
+                placeholder="Ej. Vinos artesanales boutique de Aguascalientes, botellas de 750 ml, marca Babal"
+              >${escapeHtml(brief.productDescription)}</textarea>
+            </div>
+
+            <div class="form-split form-three">
+              <div class="field">
+                <label for="logistics-business-type">Tipo</label>
+                <select id="logistics-business-type" name="businessType">
+                  ${buildSelectOptions(
+                    [
+                      ["producto_fisico", "Producto fisico"],
+                      ["digital", "Producto digital"],
+                      ["servicio", "Servicio"],
+                    ],
+                    brief.businessType
+                  )}
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="logistics-coverage">Cobertura</label>
+                <select id="logistics-coverage" name="coverage">
+                  ${buildSelectOptions(
+                    [
+                      ["local", "Local (misma ciudad)"],
+                      ["nacional", "Nacional (Mexico)"],
+                      ["internacional", "Internacional"],
+                    ],
+                    brief.coverage
+                  )}
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="logistics-prep-time">Preparacion</label>
+                <select id="logistics-prep-time" name="prepTime">
+                  ${buildSelectOptions(getLogisticsPrepOptions().map((item) => [item, item]), brief.prepTime)}
+                </select>
+              </div>
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="logistics-shipping-cost">Costo de envio o entrega</label>
+                <input
+                  id="logistics-shipping-cost"
+                  name="shippingCost"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Ej. $120 MXN o gratis desde $999"
+                  value="${escapeHtml(brief.shippingCost)}"
+                >
+              </div>
+
+              <div class="field">
+                <label for="logistics-carriers">Paqueteria, repartidor o metodo</label>
+                <input
+                  id="logistics-carriers"
+                  name="carriers"
+                  type="text"
+                  maxlength="160"
+                  placeholder="Ej. DHL, FedEx, repartidor local o link de acceso"
+                  value="${escapeHtml(brief.carriers)}"
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="logistics-damage-policy">Que haces si algo llega danado o falla</label>
+              <textarea
+                id="logistics-damage-policy"
+                name="damagePolicy"
+                maxlength="260"
+                placeholder="Ej. Pedimos fotos del empaque y producto, revisamos en 24 horas y ofrecemos reposicion si aplica"
+              >${escapeHtml(brief.damagePolicy)}</textarea>
+            </div>
+
+            <div class="logistics-checklist">
+              <div class="checklist-header">
+                <div>
+                  <h3>Errores que cometes hoy</h3>
+                  <p>Marca los que han pasado en tu comunicacion con clientes.</p>
+                </div>
+                <span>${brief.currentErrors.length}/${errorCatalog.length}</span>
+              </div>
+              <div class="checklist-grid">
+                ${errorCatalog
+                  .map(
+                    (error) => `
+                      <label class="check-card">
+                        <input
+                          type="checkbox"
+                          name="currentErrors"
+                          value="${error.id}"
+                          ${selectedErrors.has(error.id) ? "checked" : ""}
+                        >
+                        <span>${escapeHtml(error.text)}</span>
+                      </label>
+                    `
+                  )
+                  .join("")}
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="button button-primary logistics-primary" type="submit">Generar mensajes claros</button>
+              <button class="button button-secondary" type="button" data-action="clear-logistics">
+                Limpiar brief
+              </button>
+            </div>
+          </form>
+        </article>
+      </div>
+
+      ${buildLogisticsPanelMarkup()}
+    </section>
+  `);
+
+  ensureAutomaticLogisticsDelivery();
+}
+
+function buildLogisticsPanelMarkup() {
+  const deliveryStatus = state.logistics.delivery.status;
+
+  if (state.logistics.status === "loading") {
+    return `
+      <section class="result-card logistics-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Mensajes logisticos</p>
+            <h3 class="ai-title">Estamos convirtiendo tu promesa de entrega en comunicacion clara.</h3>
+          </div>
+          <span class="status-chip status-chip-active">Generando</span>
+        </div>
+        <div class="loading-stack" aria-hidden="true">
+          <div class="loading-line loading-line-lg"></div>
+          <div class="loading-line"></div>
+          <div class="loading-line loading-line-sm"></div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.logistics.status === "error") {
+    return `
+      <section class="result-card logistics-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Mensajes logisticos</p>
+            <h3 class="ai-title">No pudimos generar los mensajes en este intento.</h3>
+          </div>
+          <button class="button button-secondary" type="button" data-action="retry-logistics">
+            Reintentar
+          </button>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.logistics.status !== "ready" || !state.logistics.result) {
+    return `
+      <section class="result-card logistics-panel logistics-empty">
+        <p class="eyebrow">Mensajes logisticos</p>
+        <h3 class="ai-title">Aqui veras mensajes para explicar tiempos, guias, retrasos y problemas.</h3>
+        <p class="helper-copy">
+          La meta no es prometer velocidad imposible: es explicar con claridad que pasa,
+          cuando pasa y que hara la tienda si algo cambia.
+        </p>
+      </section>
+    `;
+  }
+
+  const result = state.logistics.result;
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  const messageCards = [
+    ["01", "Respuesta a pregunta de entrega", "Cuando un cliente pregunta cuanto tarda o como se entrega.", result.mensaje_entrega],
+    ["02", "Confirmacion de pedido", "Inmediatamente despues de recibir un pedido o pago.", result.confirmacion_pedido],
+    ["03", "Aviso de envio o entrega", "Cuando el pedido sale, se entrega el acceso o queda agendado.", result.aviso_envio],
+    ["04", "Comunicacion de retraso", "En cuanto sabes que no llegaras a la fecha prometida.", result.comunicacion_retraso],
+    ["05", "Protocolo de dano o problema", "Cuando algo llego mal o no funciono como esperaba.", result.protocolo_danado],
+  ];
+
+  return `
+    <section class="result-card logistics-panel">
+      <div class="wireframe-header">
+        <div>
+          <p class="eyebrow">Mensajes logisticos</p>
+          <h3 class="ai-title">Comunicacion logistica para ${escapeHtml(brief.businessName || "tu negocio")}</h3>
+          <p class="helper-copy">No prometas rapido; promete claro.</p>
+          <div class="tag-grid">
+            <span class="tag">${escapeHtml(translateBusinessType(brief.businessType))}</span>
+            <span class="tag">${escapeHtml(translateCoverage(brief.coverage))}</span>
+            <span class="tag">Preparacion: ${escapeHtml(brief.prepTime)}</span>
+          </div>
+        </div>
+        <div class="status-stack">
+          <span class="status-chip">${brief.currentErrors.length} errores marcados</span>
+        </div>
+      </div>
+
+      <div class="logistics-contrast">
+        <article>
+          <span>Mensaje debil</span>
+          <p>"${escapeHtml(result.ejemplo_debil)}"</p>
+        </article>
+        <article>
+          <span>Mensaje claro</span>
+          <p>${escapeHtml(result.ejemplo_mejor)}</p>
+        </article>
+      </div>
+
+      <div class="message-grid">
+        ${messageCards
+          .map(
+            ([number, title, description, content]) => `
+              <article class="message-card logistics-message-card">
+                <span class="message-number">${number}</span>
+                <div>
+                  <h4>${escapeHtml(title)}</h4>
+                  <p class="message-purpose">${escapeHtml(description)}</p>
+                </div>
+                <p class="message-copy">${escapeHtml(content)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+
+      <div class="logistics-tip">
+        <span>Tu tip clave</span>
+        <p>"${escapeHtml(result.tip_clave)}"</p>
+      </div>
+
+      <div class="footer-actions">
+        <button class="button button-primary logistics-primary" type="button" data-action="send-logistics" ${deliveryStatus === "sending" || deliveryStatus === "sent" ? "disabled" : ""}>
+          ${buildLogisticsSendButtonLabel(deliveryStatus)}
+        </button>
+        <button class="button button-primary" type="button" data-action="copy-logistics">
+          Copiar mensajes
+        </button>
+        <button class="button button-secondary" type="button" data-action="download-logistics">
+          Descargar .txt
+        </button>
+        <button class="button button-ghost" type="button" data-action="reset-logistics-result">
+          Generar otro
+        </button>
+      </div>
+
+      ${buildLogisticsDeliveryStatusMarkup(deliveryStatus)}
+    </section>
+  `;
+}
+
 function handleSubmit(event) {
   if (event.target.id === "intake-form") {
     event.preventDefault();
@@ -1684,6 +2071,57 @@ function handleSubmit(event) {
     generateStoreMessages(true);
     scrollToToolStart();
   }
+
+  if (event.target.id === "logistics-form") {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const emailField = event.target.querySelector("#logistics-student-email");
+    const productField = event.target.querySelector("#logistics-product-description");
+    const brief = normalizeLogisticsBrief({
+      studentName: formData.get("studentName"),
+      studentEmail: formData.get("studentEmail"),
+      businessName: formData.get("businessName"),
+      productDescription: formData.get("productDescription"),
+      businessType: formData.get("businessType"),
+      coverage: formData.get("coverage"),
+      prepTime: formData.get("prepTime"),
+      shippingCost: formData.get("shippingCost"),
+      carriers: formData.get("carriers"),
+      damagePolicy: formData.get("damagePolicy"),
+      currentErrors: formData.getAll("currentErrors"),
+    });
+
+    if (emailField) {
+      emailField.removeAttribute("aria-invalid");
+    }
+    if (productField) {
+      productField.removeAttribute("aria-invalid");
+    }
+
+    if (!isValidEmail(brief.studentEmail)) {
+      if (emailField) {
+        emailField.focus();
+        emailField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Ingresa un correo valido para recibir los mensajes.");
+      return;
+    }
+
+    if (!brief.productDescription) {
+      if (productField) {
+        productField.focus();
+        productField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Describe lo que vendes para generar mensajes logisticos.");
+      return;
+    }
+
+    state.logistics.brief = brief;
+    state.logistics.delivery = createDefaultLogisticsState().delivery;
+    persistState();
+    generateLogisticsMessages(true);
+    scrollToToolStart();
+  }
 }
 
 function handleClick(event) {
@@ -1727,6 +2165,12 @@ function handleClick(event) {
       render();
       showToast("Brief limpiado.");
       break;
+    case "clear-logistics":
+      invalidateLogisticsState(false);
+      persistState();
+      render();
+      showToast("Brief limpiado.");
+      break;
     case "copy-summary":
       copySummary();
       break;
@@ -1736,11 +2180,17 @@ function handleClick(event) {
     case "copy-messages":
       copyMessages();
       break;
+    case "copy-logistics":
+      copyLogisticsMessages();
+      break;
     case "send-summary":
       sendSummaryByEmail();
       break;
     case "send-messages":
       sendStoreMessagesByEmail();
+      break;
+    case "send-logistics":
+      sendLogisticsByEmail();
       break;
     case "download-summary":
       downloadSummary();
@@ -1751,11 +2201,17 @@ function handleClick(event) {
     case "download-messages":
       downloadMessages();
       break;
+    case "download-logistics":
+      downloadLogisticsMessages();
+      break;
     case "retry-wireframe":
       generateProductWireframe(true);
       break;
     case "retry-messages":
       generateStoreMessages(true);
+      break;
+    case "retry-logistics":
+      generateLogisticsMessages(true);
       break;
     case "retry-ai":
       ensureAiAnalysis(true);
@@ -1776,6 +2232,12 @@ function handleClick(event) {
       break;
     case "reset-messages-result":
       invalidateStoreMessagesState(true);
+      persistState();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "reset-logistics-result":
+      invalidateLogisticsState(true);
       persistState();
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2094,6 +2556,10 @@ function switchTool(nextTool) {
     seedStoreMessagesBriefFromDiagnosis();
   }
 
+  if (sanitizedTool === "logistics") {
+    seedLogisticsBriefFromDiagnosis();
+  }
+
   persistState();
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2145,6 +2611,28 @@ function seedStoreMessagesBriefFromDiagnosis() {
   }
 
   state.messages.brief = seededBrief;
+}
+
+function seedLogisticsBriefFromDiagnosis() {
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  if (brief.productDescription || brief.studentEmail) {
+    return;
+  }
+
+  const seededBrief = normalizeLogisticsBrief({
+    studentName: state.intake.studentName,
+    studentEmail: state.intake.email,
+    businessName: state.intake.projectName,
+    productDescription: state.intake.productDescription,
+    businessType: "producto_fisico",
+    coverage: state.intake.primaryMarket.toLowerCase().includes("mexico") ? "nacional" : "nacional",
+  });
+
+  if (!seededBrief.productDescription && !seededBrief.studentEmail) {
+    return;
+  }
+
+  state.logistics.brief = seededBrief;
 }
 
 function generateProductWireframe(force = false) {
@@ -2264,6 +2752,69 @@ function generateStoreMessages(force = false) {
         prompt,
         inputHash,
         delivery: createDefaultStoreMessagesState().delivery,
+      };
+      persistState();
+      render();
+    });
+}
+
+function generateLogisticsMessages(force = false) {
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  if (!brief.productDescription || !isValidEmail(brief.studentEmail)) {
+    return;
+  }
+
+  const inputHash = buildLogisticsInputHash(brief);
+  if (!force) {
+    if (state.logistics.status === "loading" && state.logistics.inputHash === inputHash) {
+      return;
+    }
+    if (state.logistics.status === "ready" && state.logistics.inputHash === inputHash) {
+      return;
+    }
+  }
+
+  const prompt = buildLogisticsPrompt(brief);
+  state.logistics = {
+    brief,
+    status: "loading",
+    result: null,
+    prompt,
+    inputHash,
+    delivery: createDefaultLogisticsState().delivery,
+  };
+  persistState();
+  render();
+
+  requestLogisticsMessages(brief)
+    .then((result) => {
+      if (state.logistics.inputHash !== inputHash) {
+        return;
+      }
+
+      state.logistics = {
+        brief,
+        status: "ready",
+        result,
+        prompt,
+        inputHash,
+        delivery: createDefaultLogisticsState().delivery,
+      };
+      persistState();
+      render();
+    })
+    .catch(() => {
+      if (state.logistics.inputHash !== inputHash) {
+        return;
+      }
+
+      state.logistics = {
+        brief,
+        status: "error",
+        result: null,
+        prompt,
+        inputHash,
+        delivery: createDefaultLogisticsState().delivery,
       };
       persistState();
       render();
@@ -2566,6 +3117,137 @@ function buildMessagesDeliveryStatusMarkup(deliveryStatus) {
   `;
 }
 
+async function sendLogisticsByEmail() {
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  const result = state.logistics.status === "ready" ? state.logistics.result : null;
+
+  if (!result) {
+    showToast("Genera los mensajes logisticos antes de enviarlos.");
+    return;
+  }
+
+  if (!isValidEmail(brief.studentEmail)) {
+    showToast("Ingresa un correo valido para enviar los mensajes.");
+    return;
+  }
+
+  const resultHash = buildLogisticsResultHash(brief, result);
+  if (state.logistics.delivery.status === "sending" && state.logistics.delivery.resultHash === resultHash) {
+    return;
+  }
+
+  state.logistics.delivery = {
+    status: "sending",
+    resultHash,
+    message: "",
+  };
+  persistState();
+  render();
+
+  try {
+    const response = await fetch("/api/send-logistics-messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        payload: buildLogisticsEmailPayload(brief, result),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Send logistics failed with status ${response.status}`);
+    }
+
+    const payload = await response.json();
+    state.logistics.delivery = {
+      status: "sent",
+      resultHash,
+      message: payload.mode || "sent",
+    };
+    persistState();
+    render();
+    showToast("Mensajes logisticos enviados por correo.");
+  } catch (error) {
+    state.logistics.delivery = {
+      status: "error",
+      resultHash,
+      message: String(error?.message || "send-error"),
+    };
+    persistState();
+    render();
+    showToast("No se pudieron enviar los mensajes logisticos.");
+  }
+}
+
+function ensureAutomaticLogisticsDelivery() {
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  const result = state.logistics.status === "ready" ? state.logistics.result : null;
+
+  if (!result || !isValidEmail(brief.studentEmail)) {
+    return;
+  }
+
+  const resultHash = buildLogisticsResultHash(brief, result);
+  if (state.logistics.delivery.resultHash === resultHash && ["sending", "sent"].includes(state.logistics.delivery.status)) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    const latestBrief = normalizeLogisticsBrief(state.logistics.brief);
+    const latestResult = state.logistics.status === "ready" ? state.logistics.result : null;
+    const latestHash = latestResult ? buildLogisticsResultHash(latestBrief, latestResult) : "";
+
+    if (latestResult && latestHash === resultHash && state.logistics.delivery.status === "idle") {
+      sendLogisticsByEmail();
+    }
+  }, 250);
+}
+
+function buildLogisticsSendButtonLabel(deliveryStatus) {
+  if (deliveryStatus === "sending") {
+    return "Enviando correos...";
+  }
+  if (deliveryStatus === "sent") {
+    return "Mensajes enviados";
+  }
+  return "Enviar por correo";
+}
+
+function buildLogisticsDeliveryStatusMarkup(deliveryStatus) {
+  const email = normalizeLogisticsBrief(state.logistics.brief).studentEmail;
+
+  if (deliveryStatus === "sent") {
+    return `
+      <p class="delivery-note">
+        Los mensajes logisticos se enviaron a ${escapeHtml(email)} y tambien se compartieron con el profesor.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "error") {
+    return `
+      <p class="delivery-note delivery-note-error">
+        No se pudieron enviar los mensajes logisticos por correo. Puedes intentarlo de nuevo.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "sending") {
+    return `
+      <p class="delivery-note">
+        Enviando mensajes logisticos a tu correo y al profesor...
+      </p>
+    `;
+  }
+
+  return `
+    <p class="delivery-note">
+      Cuando esten listos, enviaremos estos mensajes a ${escapeHtml(email)} y al profesor.
+    </p>
+  `;
+}
+
 function calculateAnalysis() {
   const scores = { propia: 0, marketplace: 0, hibrido: 0 };
   state.answers.forEach((answer) => {
@@ -2669,6 +3351,18 @@ function buildStoreMessagesEmailPayload(brief, result) {
     toneLabel: translateTone(brief.tone),
     salesChannelLabel: translateSalesChannel(brief.salesChannel),
     shippingTypeLabel: translateShippingType(brief.shippingType),
+    appBaseUrl: window.location.origin,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function buildLogisticsEmailPayload(brief, result) {
+  return {
+    brief,
+    result,
+    businessTypeLabel: translateBusinessType(brief.businessType),
+    coverageLabel: translateCoverage(brief.coverage),
+    selectedErrorLabels: getSelectedErrorLabels(brief.currentErrors),
     appBaseUrl: window.location.origin,
     generatedAt: new Date().toISOString(),
   };
@@ -2791,6 +3485,60 @@ function buildMessagesSummaryText() {
       `Cuando usarlo: ${message.whenToUse}`,
       `Tip de canal: ${message.channelTip}`,
     ]),
+  ];
+
+  return lines.join("\n");
+}
+
+function buildLogisticsSummaryText() {
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  const result = state.logistics.result;
+  if (state.logistics.status !== "ready" || !result) {
+    return "Aun no hay mensajes logisticos generados.";
+  }
+
+  const lines = [
+    "Mensajes de logistica clara",
+    "===========================",
+    `Alumno: ${brief.studentName || "Sin nombre"}`,
+    `Correo: ${brief.studentEmail || "No capturado"}`,
+    `Negocio: ${brief.businessName || "Sin nombre"}`,
+    `Que vende: ${brief.productDescription || "No especificado"}`,
+    `Tipo: ${translateBusinessType(brief.businessType)}`,
+    `Cobertura: ${translateCoverage(brief.coverage)}`,
+    `Preparacion: ${brief.prepTime}`,
+    `Costo de envio/entrega: ${brief.shippingCost || "No especificado"}`,
+    `Paqueteria o metodo: ${brief.carriers || "No especificado"}`,
+    `Proceso ante danos/problemas: ${brief.damagePolicy || "No especificado"}`,
+    "",
+    "Errores marcados:",
+    ...(getSelectedErrorLabels(brief.currentErrors).length > 0
+      ? getSelectedErrorLabels(brief.currentErrors).map((item, index) => `${index + 1}. ${item}`)
+      : ["Ninguno marcado"]),
+    "",
+    "Contraste:",
+    `Mensaje debil: ${result.ejemplo_debil}`,
+    `Mensaje claro: ${result.ejemplo_mejor}`,
+    "",
+    "Mensajes:",
+    "",
+    "1. Respuesta a pregunta de entrega",
+    result.mensaje_entrega,
+    "",
+    "2. Confirmacion de pedido",
+    result.confirmacion_pedido,
+    "",
+    "3. Aviso de envio o entrega",
+    result.aviso_envio,
+    "",
+    "4. Comunicacion de retraso",
+    result.comunicacion_retraso,
+    "",
+    "5. Protocolo de dano o problema",
+    result.protocolo_danado,
+    "",
+    "Tip clave:",
+    result.tip_clave,
   ];
 
   return lines.join("\n");
@@ -2936,6 +3684,23 @@ function copyMessages() {
     });
 }
 
+function copyLogisticsMessages() {
+  const text = buildLogisticsSummaryText();
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    downloadLogisticsMessages();
+    showToast("No se pudo copiar. Se descargo el kit logistico.");
+    return;
+  }
+
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast("Mensajes logisticos copiados."))
+    .catch(() => {
+      downloadLogisticsMessages();
+      showToast("No se pudo copiar. Se descargo el kit logistico.");
+    });
+}
+
 function downloadWireframe() {
   const text = buildWireframeSummaryText();
   const slugBase =
@@ -2984,6 +3749,30 @@ function downloadMessages() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("Kit de mensajes descargado.");
+}
+
+function downloadLogisticsMessages() {
+  const text = buildLogisticsSummaryText();
+  const brief = normalizeLogisticsBrief(state.logistics.brief);
+  const slugBase = brief.businessName || brief.productDescription || "logistica-clara";
+  const slug = slugBase
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 48) || "logistica-clara";
+
+  const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-logistica-clara.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Kit logistico descargado.");
 }
 
 function animateStaticProgress() {
