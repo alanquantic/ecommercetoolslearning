@@ -1,6 +1,6 @@
 # Ruta E-commerce
 
-Herramienta local para orientar a alumnos sobre la mejor ruta para lanzar un e-commerce.
+Herramienta local para orientar a alumnos sobre decisiones clave al lanzar un e-commerce.
 
 ## Ejecutar local
 
@@ -31,17 +31,20 @@ Esto:
 - responde el diagnóstico;
 - valida el resultado;
 - comprueba la descarga del resumen;
+- valida el generador de ficha de producto y el kit de mensajes;
 - guarda capturas en `output/playwright/`.
 
 ## Lo que ya hace
 
 - Diagnostica entre tienda propia, marketplace o modelo híbrido.
 - Genera wireframes sugeridos para fichas de producto a partir de una descripcion.
+- Genera mensajes operativos para tienda en linea: bienvenida, producto, precio, pedido, pago, envio, retraso, entrega, postventa y cambios/devoluciones.
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
 - Genera una lectura personalizada con OpenAI desde `api/analyze` y conserva fallback local.
 - Permite enviar el resumen por correo con Resend desde `api/send-summary`.
+- Permite enviar el kit de mensajes con Resend desde `api/send-store-messages`.
 - Permite copiar, descargar o imprimir el resumen.
 
 ## Variables de entorno

@@ -7,6 +7,7 @@ import { chromium } from "playwright";
 
 import { buildMockAiAnalysis } from "../lib/ai-analysis.js";
 import { buildMockProductWireframe } from "../lib/product-wireframe.js";
+import { buildMockStoreMessages } from "../lib/store-messages.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +99,28 @@ try {
   await expectVisible(page.getByText("Objeciones a resolver"));
   await page.screenshot({ path: path.join(outputDir, "wireframe-producto.png"), fullPage: true });
 
+  await page.getByRole("button", { name: /mensajes de tienda/i }).click();
+  await expectVisible(page.getByRole("heading", { name: /Toda tienda necesita respuestas/ }));
+  await page.locator("#messages-student-name").fill("Andrea López");
+  await page.locator("#messages-student-email").fill("andrea@example.com");
+  await page.locator("#messages-store-name").fill("Industrial Supply Lab");
+  await page.locator("#messages-product-description").fill("Guantes de nitrilo industriales naranjas con textura para talleres y laboratorios.");
+  await page.locator("#messages-target-customer").fill("Compradores B2B que necesitan seguridad, disponibilidad y facturacion clara.");
+  await page.locator("#messages-product-type").selectOption("fisico");
+  await page.locator("#messages-tone").selectOption("tecnico");
+  await page.locator("#messages-sales-channel").selectOption("whatsapp");
+  await page.locator("#messages-shipping-type").selectOption("paqueteria");
+  await page.locator("#messages-delivery-time").fill("2 a 4 dias habiles");
+  await page.locator("#messages-payment-methods").fill("Transferencia y tarjeta");
+  await page.locator("#messages-return-policy").fill("Cambios dentro de 7 dias si el empaque esta cerrado.");
+  await page.getByRole("button", { name: /generar mensajes/i }).click();
+  await expectVisible(page.getByText("Kit de mensajes", { exact: true }));
+  await expectVisible(page.getByRole("heading", { name: "Bienvenida" }));
+  await expectVisible(page.getByRole("heading", { name: "Retraso" }));
+  await expectVisible(page.getByRole("heading", { name: "Cambio o devolucion" }));
+  await expectVisible(page.getByText("Los mensajes se enviaron"));
+  await page.screenshot({ path: path.join(outputDir, "mensajes-tienda.png"), fullPage: true });
+
   if (pageErrors.length > 0) {
     throw new Error(`Errores de página detectados: ${pageErrors.join(" | ")}`);
   }
@@ -151,6 +174,20 @@ function createStaticServer(rootPath) {
         const result = buildMockProductWireframe(body.brief);
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(JSON.stringify({ mode: "mock", model: "mock", result }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/store-messages") {
+        const body = await readRequestBody(request);
+        const result = buildMockStoreMessages(body.brief);
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", model: "mock", result }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/send-store-messages") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
         return;
       }
 

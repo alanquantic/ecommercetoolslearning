@@ -13,10 +13,23 @@ import {
   normalizeProductWireframeState,
   requestProductWireframe,
 } from "./lib/product-wireframe.js";
+import {
+  buildStoreMessagesInputHash,
+  buildStoreMessagesPrompt,
+  buildStoreMessagesResultHash,
+  createDefaultStoreMessagesState,
+  normalizeMessageBrief,
+  normalizeStoreMessagesState,
+  requestStoreMessages,
+  translateProductType,
+  translateSalesChannel,
+  translateShippingType,
+  translateTone,
+} from "./lib/store-messages.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
-const VALID_TOOLS = new Set(["diagnosis", "wireframe"]);
+const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages"]);
 
 const questions = [
   {
@@ -302,6 +315,7 @@ const defaultState = {
     message: "",
   },
   wireframe: createDefaultProductWireframeState(),
+  messages: createDefaultStoreMessagesState(),
 };
 
 let state = loadState();
@@ -335,6 +349,7 @@ function loadState() {
       ai: normalizeAiState(parsed.ai),
       delivery: normalizeDeliveryState(parsed.delivery),
       wireframe: normalizeProductWireframeState(parsed.wireframe),
+      messages: normalizeStoreMessagesState(parsed.messages),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -382,6 +397,12 @@ function invalidateWireframeState(preserveBrief = true) {
   state.wireframe = nextState;
 }
 
+function invalidateStoreMessagesState(preserveBrief = true) {
+  const nextState = createDefaultStoreMessagesState();
+  nextState.brief = preserveBrief ? normalizeMessageBrief(state.messages.brief) : { ...nextState.brief };
+  state.messages = nextState;
+}
+
 function resetState() {
   state = structuredClone(defaultState);
   aiRequestId += 1;
@@ -420,6 +441,18 @@ function buildToolSwitcherMarkup() {
         <strong>Ficha de producto</strong>
         <span>Genera un wireframe ideal para una pagina que convierta mejor.</span>
       </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="messages"
+        data-active="${state.activeTool === "messages"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 3</span>
+        <strong>Mensajes de tienda</strong>
+        <span>Crea respuestas claras para venta, envio, retrasos y postventa.</span>
+      </button>
     </nav>
   `;
 }
@@ -434,6 +467,11 @@ function renderToolShell(screenMarkup) {
 function render() {
   if (state.activeTool === "wireframe") {
     renderWireframeTool();
+    return;
+  }
+
+  if (state.activeTool === "messages") {
+    renderStoreMessagesTool();
     return;
   }
 
@@ -1109,6 +1147,367 @@ function buildWireframePanelMarkup() {
   `;
 }
 
+function renderStoreMessagesTool() {
+  const brief = state.messages.brief;
+
+  renderToolShell(`
+    <section class="screen panel-enter">
+      <div class="intro-grid messages-intro-grid">
+        <article class="surface-card intro-copy">
+          <p class="eyebrow">Mensajes para tienda</p>
+          <h2>Toda tienda necesita respuestas listas antes de que el cliente pregunte.</h2>
+          <p class="text-muted">
+            Los mensajes preparados no deben sonar roboticos. Deben ayudar a responder con
+            claridad, rapidez y consistencia en los momentos que mas afectan la confianza.
+          </p>
+
+          <div class="info-grid">
+            <div class="mini-card">
+              <strong>10 momentos</strong>
+              <span>Bienvenida, producto, precio, pedido, pago, envio, retrasos y postventa.</span>
+            </div>
+            <div class="mini-card">
+              <strong>Listos para editar</strong>
+              <span>Incluye placeholders para pedido, guia, fecha y datos del cliente.</span>
+            </div>
+          </div>
+
+          <ul class="mini-list">
+            <li>Reduce respuestas improvisadas y errores de comunicacion.</li>
+            <li>Adapta tono, canal, producto y tipo de entrega.</li>
+            <li>Envia el paquete por correo al alumno y al profesor.</li>
+          </ul>
+        </article>
+
+        <article class="surface-card">
+          <p class="eyebrow">Brief de comunicacion</p>
+          <form id="messages-form" class="form-stack">
+            <p class="field-help">
+              Describe lo que vendes y como entregas. La IA generara textos para usar en WhatsApp, Instagram, email o tienda.
+            </p>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="messages-student-name">Tu nombre</label>
+                <input
+                  id="messages-student-name"
+                  name="studentName"
+                  type="text"
+                  maxlength="80"
+                  placeholder="Ej. Andrea Lopez"
+                  value="${escapeHtml(brief.studentName)}"
+                >
+              </div>
+
+              <div class="field">
+                <label for="messages-student-email">
+                  Correo
+                  <span class="required-pill">Obligatorio</span>
+                </label>
+                <input
+                  id="messages-student-email"
+                  name="studentEmail"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  maxlength="120"
+                  required
+                  aria-required="true"
+                  placeholder="tu@correo.com"
+                  value="${escapeHtml(brief.studentEmail)}"
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="messages-store-name">Nombre de la tienda o proyecto</label>
+              <input
+                id="messages-store-name"
+                name="storeName"
+                type="text"
+                maxlength="90"
+                placeholder="Ej. Skin Routine Lab"
+                value="${escapeHtml(brief.storeName)}"
+              >
+            </div>
+
+            <div class="field">
+              <label for="messages-product-description">
+                Que vendes exactamente
+                <span class="required-pill">Obligatorio</span>
+              </label>
+              <textarea
+                id="messages-product-description"
+                name="productDescription"
+                maxlength="500"
+                required
+                aria-required="true"
+                placeholder="Ej. Guantes de nitrilo industriales naranjas con textura para talleres, laboratorios y uso rudo"
+              >${escapeHtml(brief.productDescription)}</textarea>
+            </div>
+
+            <div class="field">
+              <label for="messages-target-customer">Cliente ideal</label>
+              <textarea
+                id="messages-target-customer"
+                name="targetCustomer"
+                maxlength="260"
+                placeholder="Ej. Compradores B2B, responsables de compras o usuarios industriales que necesitan seguridad y disponibilidad"
+              >${escapeHtml(brief.targetCustomer)}</textarea>
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="messages-product-type">Tipo de producto</label>
+                <select id="messages-product-type" name="productType">
+                  ${buildSelectOptions(
+                    [
+                      ["no-definido", "Aun no lo defino"],
+                      ["fisico", "Producto fisico"],
+                      ["digital", "Producto digital"],
+                      ["servicio", "Servicio"],
+                      ["personalizado", "Producto personalizado"],
+                      ["perecedero", "Producto perecedero"],
+                    ],
+                    brief.productType
+                  )}
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="messages-tone">Tono de marca</label>
+                <select id="messages-tone" name="tone">
+                  ${buildSelectOptions(
+                    [
+                      ["cercano", "Cercano y claro"],
+                      ["premium", "Premium y cuidado"],
+                      ["tecnico", "Tecnico y preciso"],
+                      ["juvenil", "Juvenil y breve"],
+                      ["institucional", "Institucional y formal"],
+                    ],
+                    brief.tone
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="messages-sales-channel">Canal principal</label>
+                <select id="messages-sales-channel" name="salesChannel">
+                  ${buildSelectOptions(
+                    [
+                      ["whatsapp", "WhatsApp"],
+                      ["instagram", "Instagram DM"],
+                      ["email", "Email"],
+                      ["marketplace", "Marketplace"],
+                      ["tienda", "Tienda en linea"],
+                    ],
+                    brief.salesChannel
+                  )}
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="messages-shipping-type">Tipo de envio o entrega</label>
+                <select id="messages-shipping-type" name="shippingType">
+                  ${buildSelectOptions(
+                    [
+                      ["paqueteria", "Envio por paqueteria"],
+                      ["local", "Entrega local"],
+                      ["pickup", "Recoleccion en punto"],
+                      ["digital", "Entrega digital"],
+                      ["personalizado", "Entrega personalizada"],
+                    ],
+                    brief.shippingType
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="messages-delivery-time">Tiempo estimado de entrega</label>
+                <input
+                  id="messages-delivery-time"
+                  name="deliveryTime"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Ej. 2 a 4 dias habiles"
+                  value="${escapeHtml(brief.deliveryTime)}"
+                >
+              </div>
+
+              <div class="field">
+                <label for="messages-payment-methods">Metodos de pago</label>
+                <input
+                  id="messages-payment-methods"
+                  name="paymentMethods"
+                  type="text"
+                  maxlength="140"
+                  placeholder="Ej. Tarjeta, transferencia y Mercado Pago"
+                  value="${escapeHtml(brief.paymentMethods)}"
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="messages-return-policy">Politica de cambios o devoluciones</label>
+              <textarea
+                id="messages-return-policy"
+                name="returnPolicy"
+                maxlength="260"
+                placeholder="Ej. Cambios dentro de 7 dias si el producto esta cerrado y con comprobante"
+              >${escapeHtml(brief.returnPolicy)}</textarea>
+            </div>
+
+            <div class="button-row">
+              <button class="button button-primary" type="submit">Generar mensajes</button>
+              <button class="button button-secondary" type="button" data-action="clear-messages">
+                Limpiar brief
+              </button>
+            </div>
+          </form>
+        </article>
+      </div>
+
+      ${buildMessagesPanelMarkup()}
+    </section>
+  `);
+
+  ensureAutomaticMessagesDelivery();
+}
+
+function buildMessagesPanelMarkup() {
+  const deliveryStatus = state.messages.delivery.status;
+
+  if (state.messages.status === "loading") {
+    return `
+      <section class="result-card messages-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Kit de mensajes</p>
+            <h3 class="ai-title">Estamos preparando respuestas claras para cada momento de la compra.</h3>
+          </div>
+          <span class="status-chip status-chip-active">Generando</span>
+        </div>
+        <div class="loading-stack" aria-hidden="true">
+          <div class="loading-line loading-line-lg"></div>
+          <div class="loading-line"></div>
+          <div class="loading-line loading-line-sm"></div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.messages.status === "error") {
+    return `
+      <section class="result-card messages-panel">
+        <div class="ai-header">
+          <div>
+            <p class="eyebrow">Kit de mensajes</p>
+            <h3 class="ai-title">No pudimos generar los mensajes en este intento.</h3>
+          </div>
+          <button class="button button-secondary" type="button" data-action="retry-messages">
+            Reintentar
+          </button>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.messages.status !== "ready" || !state.messages.result) {
+    return `
+      <section class="result-card messages-panel messages-empty">
+        <p class="eyebrow">Kit de mensajes</p>
+        <h3 class="ai-title">Aqui apareceran 10 mensajes listos para adaptar y usar.</h3>
+        <p class="helper-copy">
+          Cubriremos bienvenida, informacion de producto, precio, pedido, pago, envio,
+          retrasos, entrega, postventa y cambios o devoluciones.
+        </p>
+      </section>
+    `;
+  }
+
+  const result = state.messages.result;
+  const brief = normalizeMessageBrief(state.messages.brief);
+
+  return `
+    <section class="result-card messages-panel">
+      <div class="wireframe-header">
+        <div>
+          <p class="eyebrow">Kit de mensajes</p>
+          <h3 class="ai-title">${escapeHtml(result.headline)}</h3>
+          <p class="helper-copy">${escapeHtml(result.strategyNote)}</p>
+          <div class="tag-grid">
+            <span class="tag">${escapeHtml(translateSalesChannel(brief.salesChannel))}</span>
+            <span class="tag">${escapeHtml(translateTone(brief.tone))}</span>
+            <span class="tag">${escapeHtml(translateShippingType(brief.shippingType))}</span>
+          </div>
+        </div>
+        <div class="status-stack">
+          <span class="status-chip">${result.messages.length} mensajes</span>
+        </div>
+      </div>
+
+      <div class="messages-strategy-grid">
+        <article class="bar-card">
+          <h3>Guia de tono</h3>
+          <ul class="summary-list">
+            ${result.toneGuidelines.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </article>
+
+        <article class="bar-card">
+          <h3>Variables utiles</h3>
+          <div class="tag-grid">
+            ${result.variables.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join("")}
+          </div>
+        </article>
+      </div>
+
+      <div class="message-grid">
+        ${result.messages
+          .map(
+            (message, index) => `
+              <article class="message-card">
+                <span class="message-number">${String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <h4>${escapeHtml(message.title)}</h4>
+                  <p class="message-purpose">${escapeHtml(message.purpose)}</p>
+                </div>
+                <div class="message-subject">Asunto sugerido: ${escapeHtml(message.subject)}</div>
+                <p class="message-copy">${escapeHtml(message.message)}</p>
+                <div class="message-meta">
+                  <span>${escapeHtml(message.whenToUse)}</span>
+                  <strong>${escapeHtml(message.channelTip)}</strong>
+                </div>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+
+      <div class="footer-actions">
+        <button class="button button-primary" type="button" data-action="send-messages" ${deliveryStatus === "sending" || deliveryStatus === "sent" ? "disabled" : ""}>
+          ${buildMessagesSendButtonLabel(deliveryStatus)}
+        </button>
+        <button class="button button-primary" type="button" data-action="copy-messages">
+          Copiar mensajes
+        </button>
+        <button class="button button-secondary" type="button" data-action="download-messages">
+          Descargar .txt
+        </button>
+        <button class="button button-ghost" type="button" data-action="reset-messages-result">
+          Generar otro
+        </button>
+      </div>
+
+      ${buildMessagesDeliveryStatusMarkup(deliveryStatus)}
+    </section>
+  `;
+}
+
 function handleSubmit(event) {
   if (event.target.id === "intake-form") {
     event.preventDefault();
@@ -1182,6 +1581,58 @@ function handleSubmit(event) {
     generateProductWireframe(true);
     scrollToToolStart();
   }
+
+  if (event.target.id === "messages-form") {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const emailField = event.target.querySelector("#messages-student-email");
+    const productField = event.target.querySelector("#messages-product-description");
+    const brief = normalizeMessageBrief({
+      studentName: formData.get("studentName"),
+      studentEmail: formData.get("studentEmail"),
+      storeName: formData.get("storeName"),
+      productDescription: formData.get("productDescription"),
+      productType: formData.get("productType"),
+      targetCustomer: formData.get("targetCustomer"),
+      tone: formData.get("tone"),
+      salesChannel: formData.get("salesChannel"),
+      shippingType: formData.get("shippingType"),
+      deliveryTime: formData.get("deliveryTime"),
+      paymentMethods: formData.get("paymentMethods"),
+      returnPolicy: formData.get("returnPolicy"),
+    });
+
+    if (emailField) {
+      emailField.removeAttribute("aria-invalid");
+    }
+    if (productField) {
+      productField.removeAttribute("aria-invalid");
+    }
+
+    if (!isValidEmail(brief.studentEmail)) {
+      if (emailField) {
+        emailField.focus();
+        emailField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Ingresa un correo valido para recibir los mensajes.");
+      return;
+    }
+
+    if (!brief.productDescription) {
+      if (productField) {
+        productField.focus();
+        productField.setAttribute("aria-invalid", "true");
+      }
+      showToast("Describe lo que vendes para generar los mensajes.");
+      return;
+    }
+
+    state.messages.brief = brief;
+    state.messages.delivery = createDefaultStoreMessagesState().delivery;
+    persistState();
+    generateStoreMessages(true);
+    scrollToToolStart();
+  }
 }
 
 function handleClick(event) {
@@ -1219,14 +1670,26 @@ function handleClick(event) {
       render();
       showToast("Brief limpiado.");
       break;
+    case "clear-messages":
+      invalidateStoreMessagesState(false);
+      persistState();
+      render();
+      showToast("Brief limpiado.");
+      break;
     case "copy-summary":
       copySummary();
       break;
     case "copy-wireframe":
       copyWireframe();
       break;
+    case "copy-messages":
+      copyMessages();
+      break;
     case "send-summary":
       sendSummaryByEmail();
+      break;
+    case "send-messages":
+      sendStoreMessagesByEmail();
       break;
     case "download-summary":
       downloadSummary();
@@ -1234,8 +1697,14 @@ function handleClick(event) {
     case "download-wireframe":
       downloadWireframe();
       break;
+    case "download-messages":
+      downloadMessages();
+      break;
     case "retry-wireframe":
       generateProductWireframe(true);
+      break;
+    case "retry-messages":
+      generateStoreMessages(true);
       break;
     case "retry-ai":
       ensureAiAnalysis(true);
@@ -1250,6 +1719,12 @@ function handleClick(event) {
       break;
     case "reset-wireframe-result":
       invalidateWireframeState(true);
+      persistState();
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      break;
+    case "reset-messages-result":
+      invalidateStoreMessagesState(true);
       persistState();
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1351,6 +1826,12 @@ function buildBusinessModelOptions(selectedValue) {
       (option) =>
         `<option value="${option.value}" ${option.value === selected ? "selected" : ""}>${option.label}</option>`
     )
+    .join("");
+}
+
+function buildSelectOptions(options, selectedValue) {
+  return options
+    .map(([value, label]) => `<option value="${value}" ${value === selectedValue ? "selected" : ""}>${escapeHtml(label)}</option>`)
     .join("");
 }
 
@@ -1556,6 +2037,10 @@ function switchTool(nextTool) {
     seedWireframeBriefFromDiagnosis();
   }
 
+  if (sanitizedTool === "messages") {
+    seedStoreMessagesBriefFromDiagnosis();
+  }
+
   persistState();
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1579,6 +2064,34 @@ function seedWireframeBriefFromDiagnosis() {
   }
 
   state.wireframe.brief = seededBrief;
+}
+
+function seedStoreMessagesBriefFromDiagnosis() {
+  const brief = normalizeMessageBrief(state.messages.brief);
+  if (brief.productDescription || brief.studentEmail) {
+    return;
+  }
+
+  const seededBrief = normalizeMessageBrief({
+    studentName: state.intake.studentName,
+    studentEmail: state.intake.email,
+    storeName: state.intake.projectName,
+    productDescription: state.intake.productDescription,
+    targetCustomer: state.intake.targetCustomer,
+    productType: "fisico",
+    salesChannel: state.intake.salesChannels.toLowerCase().includes("instagram")
+      ? "instagram"
+      : state.intake.salesChannels.toLowerCase().includes("email")
+        ? "email"
+        : "whatsapp",
+    paymentMethods: "",
+  });
+
+  if (!seededBrief.productDescription && !seededBrief.studentEmail) {
+    return;
+  }
+
+  state.messages.brief = seededBrief;
 }
 
 function generateProductWireframe(force = false) {
@@ -1635,6 +2148,69 @@ function generateProductWireframe(force = false) {
         result: null,
         prompt,
         inputHash,
+      };
+      persistState();
+      render();
+    });
+}
+
+function generateStoreMessages(force = false) {
+  const brief = normalizeMessageBrief(state.messages.brief);
+  if (!brief.productDescription || !isValidEmail(brief.studentEmail)) {
+    return;
+  }
+
+  const inputHash = buildStoreMessagesInputHash(brief);
+  if (!force) {
+    if (state.messages.status === "loading" && state.messages.inputHash === inputHash) {
+      return;
+    }
+    if (state.messages.status === "ready" && state.messages.inputHash === inputHash) {
+      return;
+    }
+  }
+
+  const prompt = buildStoreMessagesPrompt(brief);
+  state.messages = {
+    brief,
+    status: "loading",
+    result: null,
+    prompt,
+    inputHash,
+    delivery: createDefaultStoreMessagesState().delivery,
+  };
+  persistState();
+  render();
+
+  requestStoreMessages(brief)
+    .then((result) => {
+      if (state.messages.inputHash !== inputHash) {
+        return;
+      }
+
+      state.messages = {
+        brief,
+        status: "ready",
+        result,
+        prompt,
+        inputHash,
+        delivery: createDefaultStoreMessagesState().delivery,
+      };
+      persistState();
+      render();
+    })
+    .catch(() => {
+      if (state.messages.inputHash !== inputHash) {
+        return;
+      }
+
+      state.messages = {
+        brief,
+        status: "error",
+        result: null,
+        prompt,
+        inputHash,
+        delivery: createDefaultStoreMessagesState().delivery,
       };
       persistState();
       render();
@@ -1806,6 +2382,137 @@ function ensureAutomaticSummaryDelivery() {
   }, 250);
 }
 
+async function sendStoreMessagesByEmail() {
+  const brief = normalizeMessageBrief(state.messages.brief);
+  const result = state.messages.status === "ready" ? state.messages.result : null;
+
+  if (!result) {
+    showToast("Genera los mensajes antes de enviarlos.");
+    return;
+  }
+
+  if (!isValidEmail(brief.studentEmail)) {
+    showToast("Ingresa un correo valido para enviar los mensajes.");
+    return;
+  }
+
+  const resultHash = buildStoreMessagesResultHash(brief, result);
+  if (state.messages.delivery.status === "sending" && state.messages.delivery.resultHash === resultHash) {
+    return;
+  }
+
+  state.messages.delivery = {
+    status: "sending",
+    resultHash,
+    message: "",
+  };
+  persistState();
+  render();
+
+  try {
+    const response = await fetch("/api/send-store-messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        payload: buildStoreMessagesEmailPayload(brief, result),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Send store messages failed with status ${response.status}`);
+    }
+
+    const payload = await response.json();
+    state.messages.delivery = {
+      status: "sent",
+      resultHash,
+      message: payload.mode || "sent",
+    };
+    persistState();
+    render();
+    showToast("Mensajes enviados por correo.");
+  } catch (error) {
+    state.messages.delivery = {
+      status: "error",
+      resultHash,
+      message: String(error?.message || "send-error"),
+    };
+    persistState();
+    render();
+    showToast("No se pudieron enviar los mensajes. Intenta de nuevo.");
+  }
+}
+
+function ensureAutomaticMessagesDelivery() {
+  const brief = normalizeMessageBrief(state.messages.brief);
+  const result = state.messages.status === "ready" ? state.messages.result : null;
+
+  if (!result || !isValidEmail(brief.studentEmail)) {
+    return;
+  }
+
+  const resultHash = buildStoreMessagesResultHash(brief, result);
+  if (state.messages.delivery.resultHash === resultHash && ["sending", "sent"].includes(state.messages.delivery.status)) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    const latestBrief = normalizeMessageBrief(state.messages.brief);
+    const latestResult = state.messages.status === "ready" ? state.messages.result : null;
+    const latestHash = latestResult ? buildStoreMessagesResultHash(latestBrief, latestResult) : "";
+
+    if (latestResult && latestHash === resultHash && state.messages.delivery.status === "idle") {
+      sendStoreMessagesByEmail();
+    }
+  }, 250);
+}
+
+function buildMessagesSendButtonLabel(deliveryStatus) {
+  if (deliveryStatus === "sending") {
+    return "Enviando correos...";
+  }
+  if (deliveryStatus === "sent") {
+    return "Mensajes enviados";
+  }
+  return "Enviar por correo";
+}
+
+function buildMessagesDeliveryStatusMarkup(deliveryStatus) {
+  const email = normalizeMessageBrief(state.messages.brief).studentEmail;
+
+  if (deliveryStatus === "sent") {
+    return `
+      <p class="delivery-note">
+        Los mensajes se enviaron a ${escapeHtml(email)} y tambien se compartieron con el profesor.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "error") {
+    return `
+      <p class="delivery-note delivery-note-error">
+        No se pudieron enviar los mensajes por correo. Puedes intentarlo de nuevo.
+      </p>
+    `;
+  }
+
+  if (deliveryStatus === "sending") {
+    return `
+      <p class="delivery-note">
+        Enviando mensajes a tu correo y al profesor...
+      </p>
+    `;
+  }
+
+  return `
+    <p class="delivery-note">
+      Cuando esten listos, enviaremos estos mensajes a ${escapeHtml(email)} y al profesor.
+    </p>
+  `;
+}
+
 function calculateAnalysis() {
   const scores = { propia: 0, marketplace: 0, hibrido: 0 };
   state.answers.forEach((answer) => {
@@ -1901,6 +2608,19 @@ function buildEmailReportPayload(analysis, aiAnalysis) {
   };
 }
 
+function buildStoreMessagesEmailPayload(brief, result) {
+  return {
+    brief,
+    result,
+    productTypeLabel: translateProductType(brief.productType),
+    toneLabel: translateTone(brief.tone),
+    salesChannelLabel: translateSalesChannel(brief.salesChannel),
+    shippingTypeLabel: translateShippingType(brief.shippingType),
+    appBaseUrl: window.location.origin,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 function buildSummaryText() {
   const analysis = calculateAnalysis();
   const profile = profileCatalog[analysis.recommendation];
@@ -1972,6 +2692,53 @@ function buildSummaryText() {
       ...aiAnalysis.sprint.map((item, index) => `${index + 1}. ${item}`)
     );
   }
+
+  return lines.join("\n");
+}
+
+function buildMessagesSummaryText() {
+  const brief = normalizeMessageBrief(state.messages.brief);
+  const result = state.messages.result;
+  if (state.messages.status !== "ready" || !result) {
+    return "Aun no hay mensajes generados.";
+  }
+
+  const lines = [
+    "Mensajes para tienda en linea",
+    "=============================",
+    `Alumno: ${brief.studentName || "Sin nombre"}`,
+    `Correo: ${brief.studentEmail || "No capturado"}`,
+    `Tienda: ${brief.storeName || "Sin nombre"}`,
+    `Que vende: ${brief.productDescription || "No especificado"}`,
+    `Tipo de producto: ${translateProductType(brief.productType)}`,
+    `Cliente ideal: ${brief.targetCustomer || "No especificado"}`,
+    `Tono: ${translateTone(brief.tone)}`,
+    `Canal principal: ${translateSalesChannel(brief.salesChannel)}`,
+    `Tipo de envio o entrega: ${translateShippingType(brief.shippingType)}`,
+    `Tiempo estimado: ${brief.deliveryTime || "No especificado"}`,
+    `Metodos de pago: ${brief.paymentMethods || "No especificado"}`,
+    `Politica de cambios/devoluciones: ${brief.returnPolicy || "No especificada"}`,
+    "",
+    result.headline,
+    result.strategyNote,
+    "",
+    "Guia de tono:",
+    ...result.toneGuidelines.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Variables utiles:",
+    ...result.variables.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "Mensajes:",
+    ...result.messages.flatMap((message, index) => [
+      "",
+      `${index + 1}. ${message.title}`,
+      `Proposito: ${message.purpose}`,
+      `Asunto: ${message.subject}`,
+      message.message,
+      `Cuando usarlo: ${message.whenToUse}`,
+      `Tip de canal: ${message.channelTip}`,
+    ]),
+  ];
 
   return lines.join("\n");
 }
@@ -2099,6 +2866,23 @@ function copyWireframe() {
     });
 }
 
+function copyMessages() {
+  const text = buildMessagesSummaryText();
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    downloadMessages();
+    showToast("No se pudo copiar. Se descargo el kit.");
+    return;
+  }
+
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast("Mensajes copiados al portapapeles."))
+    .catch(() => {
+      downloadMessages();
+      showToast("No se pudo copiar. Se descargo el kit.");
+    });
+}
+
 function downloadWireframe() {
   const text = buildWireframeSummaryText();
   const slugBase =
@@ -2123,6 +2907,30 @@ function downloadWireframe() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("Guia descargada.");
+}
+
+function downloadMessages() {
+  const text = buildMessagesSummaryText();
+  const brief = normalizeMessageBrief(state.messages.brief);
+  const slugBase = brief.storeName || brief.productDescription || "mensajes-tienda";
+  const slug = slugBase
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 48) || "mensajes-tienda";
+
+  const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-mensajes-tienda.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Kit de mensajes descargado.");
 }
 
 function animateStaticProgress() {
