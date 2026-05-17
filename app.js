@@ -40,15 +40,26 @@ import {
   translateBusinessType,
   translateCoverage,
 } from "./lib/logistics-messages.js";
+import {
+  applyBoxPreset,
+  calculateVolumetric,
+  createDefaultVolumetricState,
+  formatNumber,
+  getBoxPresets,
+  getFactorOptions,
+  normalizeVolumetricSimulator,
+  normalizeVolumetricState,
+} from "./lib/volumetric-weight.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
-const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics"]);
+const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics", "volumetric"]);
 const TOOL_ROUTES = {
   diagnosis: "/diagnostico",
   wireframe: "/ficha-producto",
   messages: "/mensajes",
   logistics: "/logistica",
+  volumetric: "/peso-volumetrico",
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
@@ -338,6 +349,7 @@ const defaultState = {
   wireframe: createDefaultProductWireframeState(),
   messages: createDefaultStoreMessagesState(),
   logistics: createDefaultLogisticsState(),
+  volumetric: createDefaultVolumetricState(),
 };
 
 let state = loadState();
@@ -351,6 +363,7 @@ render();
 
 appRoot.addEventListener("submit", handleSubmit);
 appRoot.addEventListener("click", handleClick);
+appRoot.addEventListener("change", handleInput);
 window.addEventListener("popstate", () => {
   syncToolWithLocation({ replaceUnknown: false });
   render();
@@ -378,6 +391,7 @@ function loadState() {
       wireframe: normalizeProductWireframeState(parsed.wireframe),
       messages: normalizeStoreMessagesState(parsed.messages),
       logistics: normalizeLogisticsState(parsed.logistics),
+      volumetric: normalizeVolumetricState(parsed.volumetric),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -474,6 +488,10 @@ function invalidateLogisticsState(preserveBrief = true) {
   state.logistics = nextState;
 }
 
+function resetVolumetricState() {
+  state.volumetric = createDefaultVolumetricState();
+}
+
 function resetState() {
   state = structuredClone(defaultState);
   aiRequestId += 1;
@@ -540,6 +558,19 @@ function buildToolSwitcherMarkup() {
         <strong>Logistica clara</strong>
         <span>Convierte tiempos, guias y retrasos en mensajes confiables.</span>
       </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="volumetric"
+        data-route="${TOOL_ROUTES.volumetric}"
+        data-active="${state.activeTool === "volumetric"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 5</span>
+        <strong>Peso volumetrico</strong>
+        <span>Simula cajas y descubre cuanto aire te cobra la paqueteria.</span>
+      </button>
     </nav>
   `;
 }
@@ -549,6 +580,17 @@ function renderToolShell(screenMarkup) {
     ${buildToolSwitcherMarkup()}
     ${screenMarkup}
   `;
+  scrollActiveToolTabIntoView();
+}
+
+function scrollActiveToolTabIntoView() {
+  window.requestAnimationFrame(() => {
+    const activeTab = appRoot.querySelector('.tool-tab[data-active="true"]');
+    if (!activeTab) {
+      return;
+    }
+    activeTab.scrollIntoView({ block: "nearest", inline: "center" });
+  });
 }
 
 function render() {
@@ -564,6 +606,11 @@ function render() {
 
   if (state.activeTool === "logistics") {
     renderLogisticsTool();
+    return;
+  }
+
+  if (state.activeTool === "volumetric") {
+    renderVolumetricTool();
     return;
   }
 
@@ -1600,6 +1647,242 @@ function buildMessagesPanelMarkup() {
   `;
 }
 
+function renderVolumetricTool() {
+  const simulator = normalizeVolumetricSimulator(state.volumetric.simulator);
+  const result = calculateVolumetric(simulator);
+  const presets = getBoxPresets();
+  const selectedPreset = presets.find((preset) => preset.id === simulator.boxPreset);
+
+  renderToolShell(`
+    <section class="screen panel-enter volumetric-screen">
+      <div class="volumetric-hero">
+        <div>
+          <p class="eyebrow">Simulador de paqueteria</p>
+          <h2>Peso volumetrico: el costo invisible de enviar aire.</h2>
+          <p>
+            La paqueteria compara el peso real contra el peso volumetrico y normalmente cobra el mayor.
+            Cambia caja, factor y peso para ver por que una caja grande ligera puede destruir el margen.
+          </p>
+        </div>
+        <div class="formula-card">
+          <span>Formula universal</span>
+          <strong>(Largo x Ancho x Alto) / Factor</strong>
+          <p>Usa centimetros y kilogramos. El factor puede cambiar por paqueteria, servicio y destino.</p>
+        </div>
+      </div>
+
+      <div class="volumetric-layout">
+        <article class="surface-card volumetric-controls">
+          <p class="eyebrow">Datos del paquete</p>
+          <form id="volumetric-form" class="form-stack">
+            <div class="field">
+              <label for="volumetric-preset">Caja estandar o ejemplo</label>
+              <select id="volumetric-preset" name="boxPreset" data-volumetric-field="boxPreset">
+                <option value="custom" ${simulator.boxPreset === "custom" ? "selected" : ""}>Personalizada</option>
+                ${presets
+                  .map(
+                    (preset) =>
+                      `<option value="${preset.id}" ${preset.id === simulator.boxPreset ? "selected" : ""}>${escapeHtml(
+                        preset.label
+                      )}</option>`
+                  )
+                  .join("")}
+              </select>
+              ${
+                selectedPreset
+                  ? `<p class="field-help">${escapeHtml(selectedPreset.description)}</p>`
+                  : `<p class="field-help">Ajusta las dimensiones reales de la caja final, no solo el producto.</p>`
+              }
+            </div>
+
+            <div class="volumetric-dim-grid">
+              ${buildVolumetricNumberField("length", "Largo", simulator.length, "cm")}
+              ${buildVolumetricNumberField("width", "Ancho", simulator.width, "cm")}
+              ${buildVolumetricNumberField("height", "Alto", simulator.height, "cm")}
+              ${buildVolumetricNumberField("realWeight", "Peso real", simulator.realWeight, "kg", "0.01")}
+            </div>
+
+            <div class="form-split">
+              <div class="field">
+                <label for="volumetric-factor">Factor volumetrico</label>
+                <select id="volumetric-factor" name="factor" data-volumetric-field="factor">
+                  ${getFactorOptions()
+                    .map(
+                      (option) =>
+                        `<option value="${option.value}" ${Number(option.value) === Number(simulator.factor) ? "selected" : ""}>${escapeHtml(
+                          option.label
+                        )}</option>`
+                    )
+                    .join("")}
+                </select>
+                <p class="field-help">5000 y 6000 son referencias comunes, pero cada paqueteria puede definir condiciones propias.</p>
+              </div>
+
+              <div class="field">
+                <label for="volumetric-rounding">Redondeo de cobro</label>
+                <select id="volumetric-rounding" name="rounding" data-volumetric-field="rounding">
+                  ${buildSelectOptions(
+                    [
+                      ["ceil", "Al kg superior"],
+                      ["half", "Al medio kg superior"],
+                      ["none", "Sin redondeo didactico"],
+                    ],
+                    simulator.rounding
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="volumetric-rate">Tarifa por kg cobrable (opcional)</label>
+              <input
+                id="volumetric-rate"
+                name="ratePerKg"
+                type="number"
+                min="0"
+                step="1"
+                data-volumetric-field="ratePerKg"
+                placeholder="Ej. 95"
+                value="${escapeHtml(simulator.ratePerKg)}"
+              >
+              <p class="field-help">Si tienes una tarifa estimada, calculamos un costo aproximado para clase.</p>
+            </div>
+
+            <div class="button-row">
+              <button class="button button-primary volumetric-primary" type="submit">Actualizar simulacion</button>
+              <button class="button button-secondary" type="button" data-action="reset-volumetric">
+                Reiniciar
+              </button>
+            </div>
+          </form>
+        </article>
+
+        ${buildVolumetricResultMarkup(result)}
+      </div>
+
+      <section class="volumetric-examples">
+        <article>
+          <span>Ejemplo 1</span>
+          <h3>Caja chica pesada</h3>
+          <p>20 x 15 x 10 cm / 5000 = 0.6 kg volumetricos. Si pesa 1.5 kg reales, cobran 1.5 kg.</p>
+        </article>
+        <article>
+          <span>Ejemplo 2</span>
+          <h3>Caja grande ligera</h3>
+          <p>40 x 30 x 25 cm / 5000 = 6 kg volumetricos. Si pesa 0.8 kg reales, pueden cobrar 6 kg.</p>
+        </article>
+        <article>
+          <span>Conclusion</span>
+          <h3>La caja correcta protege el margen</h3>
+          <p>Reducir aire, relleno y altura puede bajar de forma importante el costo de envio.</p>
+        </article>
+      </section>
+    </section>
+  `);
+}
+
+function buildVolumetricResultMarkup(result) {
+  const simulator = result.simulator;
+  const risk = result.riskLevel;
+  const estimatedCostMarkup =
+    result.estimatedCost !== null
+      ? `<div class="volumetric-cost">$${formatNumber(result.estimatedCost, 2)} MXN estimados</div>`
+      : `<p class="field-help">Agrega una tarifa por kg para estimar costo.</p>`;
+
+  return `
+    <article class="result-card volumetric-result">
+      <div class="volumetric-result-header">
+        <div>
+          <p class="eyebrow">Resultado</p>
+          <h3>${result.dominant === "volumetric" ? "Gana el peso volumetrico" : "Gana el peso real"}</h3>
+        </div>
+        <span class="volumetric-risk" data-tone="${risk.tone}">${escapeHtml(risk.label)}</span>
+      </div>
+
+      <div class="volumetric-equation">
+        <span>(${formatNumber(simulator.length)} x ${formatNumber(simulator.width)} x ${formatNumber(simulator.height)}) / ${formatNumber(
+          simulator.factor,
+          0
+        )}</span>
+        <strong>${formatNumber(result.volumetricWeight)} kg volumetricos</strong>
+      </div>
+
+      <div class="volumetric-metrics">
+        <div>
+          <span>Peso real</span>
+          <strong>${formatNumber(simulator.realWeight)} kg</strong>
+          <small>Caja sobre bascula</small>
+        </div>
+        <div>
+          <span>Peso volumetrico</span>
+          <strong>${formatNumber(result.volumetricWeight)} kg</strong>
+          <small>Volumen / factor</small>
+        </div>
+        <div class="metric-featured">
+          <span>Peso cobrable</span>
+          <strong>${formatNumber(result.chargeableWeight)} kg</strong>
+          <small>Mayor entre ambos</small>
+        </div>
+      </div>
+
+      <p class="volumetric-explanation">${escapeHtml(result.explanation)}</p>
+
+      <div class="volumetric-impact-grid">
+        <div>
+          <span>Multiplicador vs peso real</span>
+          <strong>${formatNumber(result.multiplier, 1)}x</strong>
+          <small>${escapeHtml(risk.detail)}</small>
+        </div>
+        <div>
+          <span>Volumen de caja</span>
+          <strong>${formatNumber(result.volumeCm3, 0)} cm3</strong>
+          <small>El aire tambien ocupa espacio logistico.</small>
+        </div>
+      </div>
+
+      <div class="volumetric-suggestion">
+        <span>Simulacion de caja 10%-15% mas compacta</span>
+        <p>
+          Si aproximas la caja a ${result.compactSuggestion.length} x ${result.compactSuggestion.width} x ${result.compactSuggestion.height} cm,
+          el volumetrico bajaria a ${formatNumber(result.compactSuggestion.volumetricWeight)} kg.
+        </p>
+        <strong>Reduccion volumetrica aproximada: ${formatNumber(result.compactSuggestion.potentialReduction, 0)}%</strong>
+      </div>
+
+      ${estimatedCostMarkup}
+
+      <div class="footer-actions">
+        <button class="button button-primary" type="button" data-action="copy-volumetric">
+          Copiar calculo
+        </button>
+        <button class="button button-secondary" type="button" data-action="download-volumetric">
+          Descargar .txt
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function buildVolumetricNumberField(name, label, value, suffix, step = "1") {
+  return `
+    <div class="field volumetric-number-field">
+      <label for="volumetric-${name}">${escapeHtml(label)}</label>
+      <div>
+        <input
+          id="volumetric-${name}"
+          name="${name}"
+          type="number"
+          min="0.01"
+          step="${step}"
+          data-volumetric-field="${name}"
+          value="${escapeHtml(value)}"
+        >
+        <span>${escapeHtml(suffix)}</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderLogisticsTool() {
   const brief = state.logistics.brief;
   const selectedErrors = new Set(brief.currentErrors);
@@ -1947,6 +2230,13 @@ function buildLogisticsPanelMarkup() {
 }
 
 function handleSubmit(event) {
+  if (event.target.id === "volumetric-form") {
+    event.preventDefault();
+    updateVolumetricFromForm(event.target);
+    showToast("Simulacion actualizada.");
+    return;
+  }
+
   if (event.target.id === "intake-form") {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -2124,6 +2414,44 @@ function handleSubmit(event) {
   }
 }
 
+function handleInput(event) {
+  const field = event.target.closest("[data-volumetric-field]");
+  if (!field || state.activeTool !== "volumetric") {
+    return;
+  }
+
+  const form = field.closest("#volumetric-form");
+  if (!form) {
+    return;
+  }
+
+  updateVolumetricFromForm(form);
+}
+
+function updateVolumetricFromForm(form) {
+  const formData = new FormData(form);
+  const selectedPreset = String(formData.get("boxPreset") || "custom");
+  const current = {
+    ...state.volumetric.simulator,
+    boxPreset: selectedPreset,
+    length: formData.get("length"),
+    width: formData.get("width"),
+    height: formData.get("height"),
+    realWeight: formData.get("realWeight"),
+    factor: formData.get("factor"),
+    ratePerKg: formData.get("ratePerKg"),
+    rounding: formData.get("rounding"),
+  };
+
+  state.volumetric.simulator =
+    selectedPreset !== state.volumetric.simulator.boxPreset && selectedPreset !== "custom"
+      ? applyBoxPreset(current, selectedPreset)
+      : normalizeVolumetricSimulator(current);
+
+  persistState();
+  render();
+}
+
 function handleClick(event) {
   const optionButton = event.target.closest("[data-option-type]");
   if (optionButton) {
@@ -2171,6 +2499,12 @@ function handleClick(event) {
       render();
       showToast("Brief limpiado.");
       break;
+    case "reset-volumetric":
+      resetVolumetricState();
+      persistState();
+      render();
+      showToast("Simulador reiniciado.");
+      break;
     case "copy-summary":
       copySummary();
       break;
@@ -2182,6 +2516,9 @@ function handleClick(event) {
       break;
     case "copy-logistics":
       copyLogisticsMessages();
+      break;
+    case "copy-volumetric":
+      copyVolumetricCalculation();
       break;
     case "send-summary":
       sendSummaryByEmail();
@@ -2203,6 +2540,9 @@ function handleClick(event) {
       break;
     case "download-logistics":
       downloadLogisticsMessages();
+      break;
+    case "download-volumetric":
+      downloadVolumetricCalculation();
       break;
     case "retry-wireframe":
       generateProductWireframe(true);
@@ -3544,6 +3884,41 @@ function buildLogisticsSummaryText() {
   return lines.join("\n");
 }
 
+function buildVolumetricSummaryText() {
+  const result = calculateVolumetric(state.volumetric.simulator);
+  const simulator = result.simulator;
+  const lines = [
+    "Simulador de peso volumetrico",
+    "=============================",
+    `Dimensiones: ${formatNumber(simulator.length)} x ${formatNumber(simulator.width)} x ${formatNumber(simulator.height)} cm`,
+    `Peso real: ${formatNumber(simulator.realWeight)} kg`,
+    `Factor usado: ${formatNumber(simulator.factor, 0)}`,
+    `Formula: (${formatNumber(simulator.length)} x ${formatNumber(simulator.width)} x ${formatNumber(
+      simulator.height
+    )}) / ${formatNumber(simulator.factor, 0)}`,
+    `Peso volumetrico: ${formatNumber(result.volumetricWeight)} kg`,
+    `Peso cobrable estimado: ${formatNumber(result.chargeableWeight)} kg`,
+    `Cobra por: ${result.dominant === "volumetric" ? "peso volumetrico" : "peso real"}`,
+    `Multiplicador vs peso real: ${formatNumber(result.multiplier, 1)}x`,
+    "",
+    result.explanation,
+    "",
+    "Simulacion de caja mas compacta:",
+    `${result.compactSuggestion.length} x ${result.compactSuggestion.width} x ${result.compactSuggestion.height} cm -> ${formatNumber(
+      result.compactSuggestion.volumetricWeight
+    )} kg volumetricos`,
+    `Reduccion volumetrica aproximada: ${formatNumber(result.compactSuggestion.potentialReduction, 0)}%`,
+    "",
+    "Nota: los factores, redondeos y tarifas cambian por paqueteria, servicio y destino. Verifica siempre antes de cotizar al cliente.",
+  ];
+
+  if (result.estimatedCost !== null) {
+    lines.splice(9, 0, `Costo estimado: $${formatNumber(result.estimatedCost, 2)} MXN`);
+  }
+
+  return lines.join("\n");
+}
+
 function buildWireframeSummaryText() {
   const brief = normalizeBrief(state.wireframe.brief);
   const result = state.wireframe.result;
@@ -3701,6 +4076,23 @@ function copyLogisticsMessages() {
     });
 }
 
+function copyVolumetricCalculation() {
+  const text = buildVolumetricSummaryText();
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    downloadVolumetricCalculation();
+    showToast("No se pudo copiar. Se descargo el calculo.");
+    return;
+  }
+
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast("Calculo copiado al portapapeles."))
+    .catch(() => {
+      downloadVolumetricCalculation();
+      showToast("No se pudo copiar. Se descargo el calculo.");
+    });
+}
+
 function downloadWireframe() {
   const text = buildWireframeSummaryText();
   const slugBase =
@@ -3773,6 +4165,26 @@ function downloadLogisticsMessages() {
   link.remove();
   URL.revokeObjectURL(url);
   showToast("Kit logistico descargado.");
+}
+
+function downloadVolumetricCalculation() {
+  const text = buildVolumetricSummaryText();
+  const result = calculateVolumetric(state.volumetric.simulator);
+  const slug = `peso-volumetrico-${formatNumber(result.simulator.length, 0)}x${formatNumber(
+    result.simulator.width,
+    0
+  )}x${formatNumber(result.simulator.height, 0)}`.replace(/[^a-z0-9-]/gi, "-");
+
+  const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Calculo descargado.");
 }
 
 function animateStaticProgress() {

@@ -158,16 +158,30 @@ try {
   await expectVisible(page.getByText("Los mensajes logisticos se enviaron"));
   await page.screenshot({ path: path.join(outputDir, "logistica-clara.png"), fullPage: true });
 
+  await page.getByRole("button", { name: /peso volumetrico/i }).click();
+  if (!page.url().endsWith("/peso-volumetrico")) {
+    throw new Error(`Peso volumetrico deberia vivir en /peso-volumetrico. URL actual: ${page.url()}`);
+  }
+  await expectVisible(page.getByRole("heading", { name: /Peso volumetrico/ }));
+  await page.locator("#volumetric-preset").selectOption("large-light");
+  await expectVisible(page.getByText("Gana el peso volumetrico"));
+  await expectVisible(page.getByText("6 kg volumetricos", { exact: true }));
+  await expectVisible(page.getByText("Peso cobrable"));
+  await page.locator("#volumetric-rate").fill("95");
+  await page.getByRole("button", { name: /actualizar simulacion/i }).click();
+  await expectVisible(page.getByText("$570 MXN estimados"));
+  await page.screenshot({ path: path.join(outputDir, "peso-volumetrico.png"), fullPage: true });
+
   const mobilePage = await browser.newPage({ viewport: { width: 390, height: 1200 }, isMobile: true });
-  await mobilePage.goto(`${baseUrl}/logistica`, { waitUntil: "networkidle" });
-  await expectVisible(mobilePage.getByRole("heading", { name: /No prometas rapido/ }));
+  await mobilePage.goto(`${baseUrl}/peso-volumetrico`, { waitUntil: "networkidle" });
+  await expectVisible(mobilePage.getByRole("heading", { name: /Peso volumetrico/ }));
   const hasHorizontalOverflow = await mobilePage.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
   );
   if (hasHorizontalOverflow) {
-    throw new Error("La vista movil de logistica tiene overflow horizontal.");
+    throw new Error("La vista movil de peso volumetrico tiene overflow horizontal.");
   }
-  await mobilePage.screenshot({ path: path.join(outputDir, "logistica-clara-mobile.png"), fullPage: true });
+  await mobilePage.screenshot({ path: path.join(outputDir, "peso-volumetrico-mobile.png"), fullPage: true });
   await mobilePage.close();
 
   if (pageErrors.length > 0) {
@@ -255,7 +269,7 @@ function createStaticServer(rootPath) {
       }
 
       const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
-      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes", "/logistica"]);
+      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes", "/logistica", "/peso-volumetrico"]);
       const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
       const filePath = path.normalize(path.join(rootPath, pathToServe));
       const relativePath = path.relative(rootPath, filePath);

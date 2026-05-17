@@ -18,6 +18,10 @@
     {
       "source": "/logistica",
       "destination": "/index.html"
+    },
+    {
+      "source": "/peso-volumetrico",
+      "destination": "/index.html"
     }
   ]
 }
