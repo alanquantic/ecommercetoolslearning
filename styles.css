@@ -2702,6 +2702,380 @@ button {
   }
 }
 
+.logibingo-shell {
+  display: grid;
+  gap: 24px;
+}
+
+.logibingo-intro {
+  display: grid;
+  gap: 18px;
+}
+
+.logibingo-metrics {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.logibingo-metric {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.94);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.logibingo-metric-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.logibingo-metric strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.4rem;
+  color: var(--text);
+}
+
+.logibingo-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.logibingo-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.logibingo-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 130px;
+  padding: 14px 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: var(--surface-strong);
+  color: var(--text);
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    transform var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition);
+  box-shadow: 0 6px 14px rgba(21, 32, 51, 0.04);
+}
+
+.logibingo-cell:hover,
+.logibingo-cell:focus-visible {
+  outline: none;
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 14px 26px rgba(245, 158, 11, 0.18);
+}
+
+.logibingo-cell[data-selected="true"] {
+  background: linear-gradient(160deg, #f59e0b 0%, #d97706 100%);
+  border-color: #b45309;
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(180, 83, 9, 0.32);
+  transform: translateY(-1px);
+}
+
+.logibingo-cell-number {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logibingo-cell[data-selected="true"] .logibingo-cell-number {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.logibingo-cell-label {
+  font-weight: 600;
+  font-size: 0.96rem;
+}
+
+.logibingo-cell-check {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: transparent;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transform: scale(0.6);
+  transition:
+    transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.logibingo-cell[data-selected="true"] .logibingo-cell-check {
+  color: #b45309;
+  background: #fff;
+  transform: scale(1);
+}
+
+.logibingo-thermometer {
+  display: grid;
+  gap: 14px;
+  border-left: 6px solid var(--success);
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.logibingo-thermometer[data-tone="amber"] {
+  border-left-color: #d97706;
+}
+
+.logibingo-thermometer[data-tone="red"] {
+  border-left-color: #dc2626;
+  box-shadow: 0 18px 34px rgba(220, 38, 38, 0.18);
+}
+
+.logibingo-thermometer-header h3 {
+  margin: 4px 0 2px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.18rem;
+  color: var(--text);
+}
+
+.logibingo-thermometer-bar {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.logibingo-thermometer-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  border-radius: 999px;
+  transition: width 320ms ease;
+}
+
+.logibingo-thermometer-bar[data-tone="amber"] .logibingo-thermometer-fill {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.logibingo-thermometer-bar[data-tone="red"] .logibingo-thermometer-fill {
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.logibingo-thermometer-bar[data-pulse="true"] {
+  animation: logibingo-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes logibingo-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+}
+
+.logibingo-thermometer-scale {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.logibingo-thermometer-scale span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.04);
+  text-align: center;
+}
+
+.logibingo-thermometer-scale span[data-active="true"] {
+  color: #fff;
+  background: var(--text);
+}
+
+.logibingo-thermometer[data-tone="green"] .logibingo-thermometer-scale span[data-active="true"] {
+  background: #15803d;
+}
+
+.logibingo-thermometer[data-tone="amber"] .logibingo-thermometer-scale span[data-active="true"] {
+  background: #d97706;
+}
+
+.logibingo-thermometer[data-tone="red"] .logibingo-thermometer-scale span[data-active="true"] {
+  background: #b91c1c;
+}
+
+.logibingo-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 60;
+}
+
+.logibingo-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  border: 0;
+}
+
+.logibingo-modal-content {
+  position: relative;
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: 16px;
+  animation: logibingo-modal-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes logibingo-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.logibingo-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logibingo-modal-header h3 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.logibingo-modal-close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
+}
+
+.logibingo-modal-close:hover,
+.logibingo-modal-close:focus-visible {
+  outline: none;
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #b91c1c;
+}
+
+.logibingo-anecdote-field textarea {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 132px;
+  background: #f8fafc;
+  color: var(--text);
+}
+
+.logibingo-anecdote-field textarea:focus {
+  outline: none;
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+  background: #fff;
+}
+
+.logibingo-anecdote-counter {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.logibingo-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .logibingo-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .logibingo-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .logibingo-cell {
+    min-height: 118px;
+  }
+
+  .logibingo-thermometer-scale {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   body::before,
   .hero,

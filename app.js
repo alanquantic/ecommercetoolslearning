@@ -63,17 +63,31 @@ import {
   normalizeForm as normalizeLogiForm,
   normalizeLogiChallengedState,
 } from "./lib/logichallenged.js";
+import {
+  closeModal as closeBingoModal,
+  countCompletedLines as countBingoLines,
+  countSelected as countBingoSelected,
+  createDefaultLogiBingoState,
+  getAnecdoteMaxLength as getBingoAnecdoteMax,
+  getBoardCells as getBingoBoardCells,
+  getDangerLevel as getBingoDangerLevel,
+  getDangerPercent as getBingoDangerPercent,
+  normalizeLogiBingoState,
+  resetBoard as resetBingoBoard,
+  setAnecdote as setBingoAnecdote,
+  toggleCell as toggleBingoCell,
+} from "./lib/logibingo.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
-const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics", "volumetric", "logichallenged"]);
+const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics", "volumetric", "logibingo"]);
 const TOOL_ROUTES = {
   diagnosis: "/diagnostico",
   wireframe: "/ficha-producto",
   messages: "/mensajes",
   logistics: "/logistica",
   volumetric: "/peso-volumetrico",
-  logichallenged: "/logichallenged",
+  logibingo: "/logibingo",
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
@@ -365,6 +379,7 @@ const defaultState = {
   logistics: createDefaultLogisticsState(),
   volumetric: createDefaultVolumetricState(),
   logichallenged: createDefaultLogiChallengedState(),
+  logibingo: createDefaultLogiBingoState(),
 };
 
 let state = loadState();
@@ -410,6 +425,7 @@ function loadState() {
       logistics: normalizeLogisticsState(parsed.logistics),
       volumetric: normalizeVolumetricState(parsed.volumetric),
       logichallenged: normalizeLogiChallengedState(parsed.logichallenged),
+      logibingo: normalizeLogiBingoState(parsed.logibingo),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -603,13 +619,13 @@ function buildToolSwitcherMarkup() {
         class="tool-tab"
         type="button"
         data-action="switch-tool"
-        data-tool="logichallenged"
-        data-route="${TOOL_ROUTES.logichallenged}"
-        data-active="${state.activeTool === "logichallenged"}"
+        data-tool="logibingo"
+        data-route="${TOOL_ROUTES.logibingo}"
+        data-active="${state.activeTool === "logibingo"}"
       >
         <span class="tool-tab-kicker">Herramienta 6</span>
-        <strong>LogiChallenged</strong>
-        <span>Galeria de empaques, costos y votacion por mesas.</span>
+        <strong>LogiBingo</strong>
+        <span>Bingo de los horrores logisticos para dinamicas en clase.</span>
       </button>
     </nav>
   `;
@@ -657,8 +673,8 @@ function render() {
     return;
   }
 
-  if (state.activeTool === "logichallenged") {
-    renderLogiChallengedTool();
+  if (state.activeTool === "logibingo") {
+    renderLogiBingoTool();
     return;
   }
 
@@ -2164,6 +2180,135 @@ function buildLogiGalleryCard(item) {
   `;
 }
 
+function renderLogiBingoTool() {
+  const bingo = state.logibingo;
+  const cells = getBingoBoardCells(bingo);
+  const selectedCount = countBingoSelected(bingo.selected);
+  const linesCount = countBingoLines(bingo.selected);
+  const dangerPercent = getBingoDangerPercent(bingo.selected);
+  const dangerLevel = getBingoDangerLevel(bingo.selected);
+  const anecdoteMax = getBingoAnecdoteMax();
+
+  renderToolShell(`
+    <section class="screen panel-enter logibingo-shell">
+      <article class="surface-card logibingo-intro">
+        <p class="eyebrow">Dinamica grupal</p>
+        <h2>LogiBingo: el bingo de los horrores logisticos</h2>
+        <p class="text-muted">
+          Marca cada error que ya viviste vendiendo en linea. Cada vez que completes una linea de cuatro
+          (fila, columna o diagonal) abriremos un espacio para que cuentes tu peor anecdota.
+        </p>
+        <div class="logibingo-metrics" role="status" aria-live="polite">
+          <div class="logibingo-metric">
+            <span class="logibingo-metric-label">Errores marcados</span>
+            <strong>${selectedCount} / 16</strong>
+          </div>
+          <div class="logibingo-metric">
+            <span class="logibingo-metric-label">Lineas completadas</span>
+            <strong>${linesCount}</strong>
+          </div>
+          <div class="logibingo-metric">
+            <span class="logibingo-metric-label">Peligro operativo</span>
+            <strong>${dangerPercent}%</strong>
+          </div>
+        </div>
+        <div class="logibingo-controls">
+          <button type="button" class="ghost-button" data-action="logibingo-reset">Reiniciar tablero</button>
+        </div>
+      </article>
+
+      <div
+        class="logibingo-board"
+        role="grid"
+        aria-label="Tablero LogiBingo 4 por 4"
+      >
+        ${cells
+          .map(
+            (cell) => `
+              <button
+                type="button"
+                class="logibingo-cell"
+                role="gridcell"
+                data-action="logibingo-toggle"
+                data-cell="${cell.cellIndex}"
+                data-selected="${cell.selected}"
+                aria-pressed="${cell.selected}"
+              >
+                <span class="logibingo-cell-number">${cell.cellIndex + 1}</span>
+                <span class="logibingo-cell-label">${escapeHtml(cell.label)}</span>
+                <span class="logibingo-cell-check" aria-hidden="true">✓</span>
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+
+      <article class="surface-card logibingo-thermometer" data-tone="${dangerLevel.key}">
+        <header class="logibingo-thermometer-header">
+          <p class="eyebrow">🔥 Tu termometro de peligro logistico</p>
+          <h3>${escapeHtml(dangerLevel.label)}</h3>
+          <p class="text-muted">${escapeHtml(dangerLevel.detail)}</p>
+        </header>
+        <div
+          class="logibingo-thermometer-bar"
+          role="progressbar"
+          aria-valuenow="${dangerPercent}"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          data-tone="${dangerLevel.key}"
+          data-pulse="${dangerLevel.pulse}"
+        >
+          <span class="logibingo-thermometer-fill" style="width: ${dangerPercent}%"></span>
+        </div>
+        <div class="logibingo-thermometer-scale" aria-hidden="true">
+          <span data-active="${dangerLevel.key === "green"}">0-3 errores</span>
+          <span data-active="${dangerLevel.key === "amber"}">4-8 errores</span>
+          <span data-active="${dangerLevel.key === "red"}">9+ errores</span>
+        </div>
+      </article>
+
+      ${
+        bingo.modalOpen
+          ? `
+            <div class="logibingo-modal" role="dialog" aria-modal="true" aria-labelledby="logibingo-modal-title">
+              <div class="logibingo-modal-backdrop" data-action="logibingo-close-modal"></div>
+              <div class="logibingo-modal-content">
+                <header class="logibingo-modal-header">
+                  <h3 id="logibingo-modal-title">🎉 ¡LINEA COMPLETADA! ¡YA LO VIVI! 🎉</h3>
+                  <button
+                    type="button"
+                    class="logibingo-modal-close"
+                    data-action="logibingo-close-modal"
+                    aria-label="Cerrar y seguir jugando"
+                  >×</button>
+                </header>
+                <p class="text-muted">
+                  Escribe de forma anonima tu peor experiencia o anecdota con este error logistico
+                  para debatir con el salon:
+                </p>
+                <label class="logibingo-anecdote-field">
+                  <span class="visually-hidden">Anecdota anonima</span>
+                  <textarea
+                    name="logibingo-anecdote"
+                    data-input="logibingo-anecdote"
+                    rows="5"
+                    maxlength="${anecdoteMax}"
+                    placeholder="Ej: Vendi un producto que estaba agotado y me toco escribirle al cliente para cancelar..."
+                  >${escapeHtml(bingo.anecdote)}</textarea>
+                </label>
+                <p class="logibingo-anecdote-counter">${bingo.anecdote.length} / ${anecdoteMax}</p>
+                <div class="logibingo-modal-actions">
+                  <button type="button" class="primary-button" data-action="logibingo-close-modal">Seguir marcando</button>
+                </div>
+              </div>
+            </div>
+          `
+          : ""
+      }
+    </section>
+  `);
+}
+
 function renderLogisticsTool() {
   const brief = state.logistics.brief;
   const selectedErrors = new Set(brief.currentErrors);
@@ -2729,6 +2874,17 @@ function handleSubmit(event) {
 }
 
 function handleInput(event) {
+  const bingoAnecdote = event.target.closest('[data-input="logibingo-anecdote"]');
+  if (bingoAnecdote && state.activeTool === "logibingo") {
+    const counter = appRoot.querySelector(".logibingo-anecdote-counter");
+    state.logibingo = setBingoAnecdote(state.logibingo, bingoAnecdote.value);
+    persistState();
+    if (counter) {
+      counter.textContent = `${state.logibingo.anecdote.length} / ${getBingoAnecdoteMax()}`;
+    }
+    return;
+  }
+
   const logiForm = event.target.closest("#logi-form");
   if (logiForm && state.activeTool === "logichallenged") {
     const formData = new FormData(logiForm);
@@ -2891,6 +3047,28 @@ function formatLogiTimer(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function toggleLogiBingoCell(cellIndex) {
+  if (!Number.isFinite(cellIndex)) {
+    return;
+  }
+  state.logibingo = toggleBingoCell(state.logibingo, cellIndex);
+  persistState();
+  render();
+}
+
+function closeLogiBingoModal() {
+  state.logibingo = closeBingoModal(state.logibingo);
+  persistState();
+  render();
+}
+
+function resetLogiBingo() {
+  state.logibingo = resetBingoBoard();
+  persistState();
+  render();
+  showToast("Tablero reiniciado con un orden nuevo.");
+}
+
 function handleClick(event) {
   const optionButton = event.target.closest("[data-option-type]");
   if (optionButton) {
@@ -2926,6 +3104,15 @@ function handleClick(event) {
       break;
     case "logi-vote":
       voteLogiPackage(actionButton.dataset.id, actionButton.dataset.vote);
+      break;
+    case "logibingo-toggle":
+      toggleLogiBingoCell(Number(actionButton.dataset.cell));
+      break;
+    case "logibingo-close-modal":
+      closeLogiBingoModal();
+      break;
+    case "logibingo-reset":
+      resetLogiBingo();
       break;
     case "next-question":
       goNext();
