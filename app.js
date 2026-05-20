@@ -68,11 +68,16 @@ import {
   countCompletedLines as countBingoLines,
   countSelected as countBingoSelected,
   createDefaultLogiBingoState,
+  getAnecdoteHistory as getBingoAnecdoteHistory,
   getAnecdoteMaxLength as getBingoAnecdoteMax,
   getBoardCells as getBingoBoardCells,
   getDangerLevel as getBingoDangerLevel,
   getDangerPercent as getBingoDangerPercent,
+  getTriggerCellLabel as getBingoTriggerLabel,
+  markSendError as markBingoSendError,
+  markSending as markBingoSending,
   normalizeLogiBingoState,
+  recordSentAnecdote as recordBingoAnecdote,
   resetBoard as resetBingoBoard,
   setAnecdote as setBingoAnecdote,
   toggleCell as toggleBingoCell,
@@ -2263,6 +2268,9 @@ function renderLogiBingoTool() {
   const dangerPercent = getBingoDangerPercent(bingo.selected);
   const dangerLevel = getBingoDangerLevel(bingo.selected);
   const anecdoteMax = getBingoAnecdoteMax();
+  const triggerLabel = getBingoTriggerLabel(bingo);
+  const anecdoteHistory = getBingoAnecdoteHistory(bingo);
+  const sendingStatus = bingo.lastSendStatus || "idle";
 
   renderToolShell(`
     <section class="screen panel-enter logibingo-shell">
@@ -2285,6 +2293,10 @@ function renderLogiBingoTool() {
           <div class="logibingo-metric">
             <span class="logibingo-metric-label">Peligro operativo</span>
             <strong>${dangerPercent}%</strong>
+          </div>
+          <div class="logibingo-metric">
+            <span class="logibingo-metric-label">Anecdotas enviadas</span>
+            <strong>${anecdoteHistory.length}</strong>
           </div>
         </div>
         <div class="logibingo-controls">
@@ -2343,23 +2355,51 @@ function renderLogiBingoTool() {
       </article>
 
       ${
+        anecdoteHistory.length > 0
+          ? `
+            <article class="surface-card logibingo-history">
+              <header>
+                <p class="eyebrow">Mis anecdotas enviadas</p>
+                <h3>${anecdoteHistory.length} contribucion${anecdoteHistory.length === 1 ? "" : "es"} a la discusion del grupo</h3>
+              </header>
+              <ul class="logibingo-history-list">
+                ${anecdoteHistory
+                  .map(
+                    (entry) => `
+                      <li>
+                        <p class="logibingo-history-error">${escapeHtml(entry.errorLabel || "Sin error etiquetado")}</p>
+                        <p class="logibingo-history-text">${escapeHtml(entry.anecdote || "(sin anecdota escrita)")}</p>
+                      </li>
+                    `,
+                  )
+                  .join("")}
+              </ul>
+            </article>
+          `
+          : ""
+      }
+
+      ${
         bingo.modalOpen
           ? `
             <div class="logibingo-modal" role="dialog" aria-modal="true" aria-labelledby="logibingo-modal-title">
               <div class="logibingo-modal-backdrop" data-action="logibingo-close-modal"></div>
               <div class="logibingo-modal-content">
                 <header class="logibingo-modal-header">
-                  <h3 id="logibingo-modal-title">🎉 ¡LINEA COMPLETADA! ¡YA LO VIVI! 🎉</h3>
+                  <div>
+                    <p class="logibingo-modal-eyebrow">🎉 ¡Linea completada! ¡Ya lo vivi!</p>
+                    <h3 id="logibingo-modal-title">${escapeHtml(triggerLabel || "Comparte tu peor anecdota")}</h3>
+                  </div>
                   <button
                     type="button"
                     class="logibingo-modal-close"
                     data-action="logibingo-close-modal"
-                    aria-label="Cerrar y seguir jugando"
+                    aria-label="Cerrar sin enviar"
                   >×</button>
                 </header>
                 <p class="text-muted">
-                  Escribe de forma anonima tu peor experiencia o anecdota con este error logistico
-                  para debatir con el salon:
+                  Tu anecdota llega <strong>anonima</strong> al profesor para que se discuta en clase.
+                  Nadie en el salon vera tu nombre ni tu correo.
                 </p>
                 <label class="logibingo-anecdote-field">
                   <span class="visually-hidden">Anecdota anonima</span>
@@ -2373,8 +2413,23 @@ function renderLogiBingoTool() {
                 </label>
                 <p class="logibingo-anecdote-counter">${bingo.anecdote.length} / ${anecdoteMax}</p>
                 <div class="logibingo-modal-actions">
-                  <button type="button" class="primary-button" data-action="logibingo-close-modal">Seguir marcando</button>
+                  <button
+                    type="button"
+                    class="primary-button"
+                    data-action="logibingo-send"
+                    ${sendingStatus === "sending" ? "disabled" : ""}
+                  >
+                    ${sendingStatus === "sending" ? "Enviando..." : "Enviar anecdota anonima"}
+                  </button>
+                  <button type="button" class="ghost-button" data-action="logibingo-close-modal">
+                    Cerrar sin enviar
+                  </button>
                 </div>
+                ${
+                  sendingStatus === "error"
+                    ? '<p class="logibingo-modal-status" data-tone="error">No pudimos enviar la anecdota. Intenta otra vez o cierra para continuar.</p>'
+                    : ""
+                }
               </div>
             </div>
           `
@@ -3695,6 +3750,61 @@ function resetLogiBingo() {
   showToast("Tablero reiniciado con un orden nuevo.");
 }
 
+async function sendLogiBingoAnecdote() {
+  const bingo = state.logibingo;
+  const text = (bingo.anecdote || "").trim();
+  if (!text) {
+    showToast("Escribe tu anecdota antes de enviarla.");
+    return;
+  }
+  if (bingo.lastSendStatus === "sending") {
+    return;
+  }
+
+  const snapshot = {
+    errorLabel: getBingoTriggerLabel(bingo),
+    dangerLevel: getBingoDangerLevel(bingo.selected).label,
+  };
+
+  state.logibingo = markBingoSending(state.logibingo);
+  persistState();
+  render();
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const response = await fetch("/api/send-bingo-anecdote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        payload: {
+          anecdote: text,
+          errorLabel: snapshot.errorLabel,
+          dangerLevel: snapshot.dangerLevel,
+          errorsMarked: countBingoSelected(state.logibingo.selected),
+          linesCompleted: countBingoLines(state.logibingo.selected),
+        },
+      }),
+      signal: controller.signal,
+    });
+    window.clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    state.logibingo = recordBingoAnecdote(state.logibingo, snapshot);
+    persistState();
+    render();
+    showToast("Anecdota enviada de forma anonima. Gracias por compartir.");
+  } catch (error) {
+    state.logibingo = markBingoSendError(state.logibingo);
+    persistState();
+    render();
+    showToast("No se pudo enviar la anecdota. Intenta de nuevo.");
+  }
+}
+
 function setLogiMatchTab(tab) {
   const next = tab === "auction" ? "auction" : "catalog";
   if (state.logimatch.activeTab === next) {
@@ -3918,6 +4028,9 @@ function handleClick(event) {
       break;
     case "logibingo-close-modal":
       closeLogiBingoModal();
+      break;
+    case "logibingo-send":
+      sendLogiBingoAnecdote();
       break;
     case "logibingo-reset":
       resetLogiBingo();

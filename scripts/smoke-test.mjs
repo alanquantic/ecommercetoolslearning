@@ -188,14 +188,18 @@ try {
   for (let index = 0; index < 4; index += 1) {
     await cells.nth(index).click();
   }
-  await expectVisible(page.getByText(/LINEA COMPLETADA/));
+  await expectVisible(page.getByText(/Linea completada/i));
   await page.locator('[data-input="logibingo-anecdote"]').fill(
     "Vendi un producto que estaba agotado y me toco escribirle al cliente para cancelar."
   );
-  await page.getByRole("button", { name: /Seguir marcando/i }).click();
+  await page.getByRole("button", { name: /Enviar anecdota anonima/i }).click();
+  await expectVisible(page.getByText(/Mis anecdotas enviadas/i));
+  await expectVisible(page.getByText(/Vendi un producto que estaba agotado/));
   await expectVisible(page.getByText(/Coordinador de Crisis|Operador Junior/));
-  for (let index = 4; index < 10; index += 1) {
-    await cells.nth(index).click();
+  // Mark 5 more cells without completing a new line: row 0 already done, this sequence leaves
+  // every other row/column/diagonal one cell short.
+  for (const idx of [4, 5, 6, 9, 10]) {
+    await cells.nth(idx).click();
   }
   await expectVisible(page.getByText(/Iman de Perdidas Operativas|Imán de Pérdidas Operativas/));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
@@ -370,6 +374,12 @@ function createStaticServer(rootPath) {
       if (request.method === "POST" && requestPath === "/api/send-logistics-messages") {
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/send-bingo-anecdote") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", delivered: true, teacherEmailId: "test-anecdote" }));
         return;
       }
 
