@@ -3116,7 +3116,12 @@ button {
 .logimatch-mipyme-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  min-width: 0;
+}
+
+.logimatch-shell {
+  min-width: 0;
 }
 
 .logimatch-card {
@@ -3612,6 +3617,223 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.logimatch-exam {
+  display: grid;
+  gap: 16px;
+}
+
+.logimatch-exam-identity,
+.logimatch-exam-progress {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.logimatch-exam-identity h3,
+.logimatch-exam-progress-header h3 {
+  margin: 0 0 4px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+}
+
+.logimatch-input {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.logimatch-input:focus {
+  outline: none;
+  border-color: rgba(79, 70, 229, 0.55);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.18);
+}
+
+.logimatch-exam-progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.logimatch-exam-counter {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #4f46e5;
+}
+
+.logimatch-exam-progress-bar {
+  height: 10px;
+  background: rgba(79, 70, 229, 0.14);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.logimatch-exam-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 999px;
+  transition: width 280ms ease;
+}
+
+.logimatch-pair-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  min-width: 0;
+}
+
+.logimatch-pair-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 14px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.logimatch-pair-card[data-state="filled"] {
+  border-color: rgba(79, 70, 229, 0.4);
+  box-shadow: 0 12px 22px rgba(79, 70, 229, 0.12);
+}
+
+.logimatch-pair-card header h4 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+}
+
+.logimatch-pair-card header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-style: italic;
+}
+
+.logimatch-pair-priority {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.logimatch-pair-select-label {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.logimatch-exam-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.logimatch-pair-results {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.logimatch-pair-results h3 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+}
+
+.logimatch-pair-results-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  min-width: 0;
+}
+
+.logimatch-pair-result {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+  border-left-width: 4px;
+}
+
+.logimatch-pair-result[data-tone="success"] {
+  border-left-color: #10b981;
+}
+
+.logimatch-pair-result[data-tone="warning"] {
+  border-left-color: #f59e0b;
+}
+
+.logimatch-pair-result[data-tone="danger"] {
+  border-left-color: #dc2626;
+}
+
+.logimatch-pair-result header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.logimatch-pair-result header h4 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.98rem;
+}
+
+.logimatch-pair-result-score {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.logimatch-pair-result[data-tone="success"] .logimatch-pair-result-score {
+  color: #047857;
+}
+
+.logimatch-pair-result[data-tone="warning"] .logimatch-pair-result-score {
+  color: #b45309;
+}
+
+.logimatch-pair-result[data-tone="danger"] .logimatch-pair-result-score {
+  color: #b91c1c;
+}
+
+.logimatch-pair-result-carrier {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.logimatch-pair-result-feedback {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.logimatch-pair-result-feedback[data-alert="true"] {
+  color: #b91c1c;
+  font-weight: 600;
 }
 
 .logimatch-result-empty {

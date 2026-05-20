@@ -16,7 +16,7 @@ URL pública: <https://ecommercetoolslearning.vercel.app>
 | 2. Decisión estratégica | 20 min | **Diagnóstico de ruta** | Decidir tienda propia vs marketplace vs híbrido para su proyecto. |
 | 3. Operación de tienda | 30 min | **Ficha de producto** + **Mensajes de tienda** | Generar página de producto y kit de mensajes con IA. |
 | 4. Logística operativa | 25 min | **Logística clara** + **Peso volumétrico** | Mensajes de envío y simulación de caja. |
-| 5. Dinámica grupal | 35 min | **LogiMatch** | Subasta de paqueterías por mesa con evidencia descargable. |
+| 5. Examen LogiMatch | 25 min | **LogiMatch** | Cada alumno empareja las 6 MiPyMEs con su paquetería y entrega evidencia. |
 | 6. Auditoría individual | 30 min | **LogiCoach** | Plan logístico personal, entrega Markdown al LMS. |
 | 7. Cierre | 15 min | Discusión con anécdotas recibidas | Lectura grupal de 3-4 anécdotas anónimas de LogiBingo. |
 
@@ -282,71 +282,88 @@ Cada alumno tiene su simulador. El riesgo se etiqueta visualmente:
 
 ---
 
-## Herramienta 7 · LogiMatch
+## Herramienta 7 · LogiMatch · examen individual
 
-**URL:** `/logimatch` · **Tiempo:** 30-35 min · **Tab:** Dinámica en clase
+**URL:** `/logimatch` · **Tiempo:** 20-30 min · **Tab:** Dinámica en clase /
+asincrónica
 
 ### Qué es
 
-**La estrella del módulo de logística.** Subasta de paqueterías por mesa. Hay
-dos tabs:
+**Examen interactivo individual.** Cada alumno con la URL hace los **6 pares**
+de MiPyME → paquetería y recibe una calificación 0-100. Hay dos tabs:
 
 1. **Catálogo de fichas**: 6 paqueterías (Estafeta, FedEx, DHL, 99 Minutos,
    Uber Direct, Cadete Local) + 6 perfiles de MiPyME (Pastelería, Joyería,
    Ropa, Electrónicos, Cosmética, Alimentos). Cada uno con todos sus datos
-   técnicos.
-2. **Simulador de subasta**: el alumno selecciona su mesa (1-15), elige una
-   MiPyME, asigna una paquetería y obtiene un score de match (0-100%) con
-   feedback.
+   técnicos. Material de estudio.
+2. **Hacer el examen**: el alumno escribe su nombre, asigna una paquetería a
+   cada una de las 6 MiPyMEs (dropdowns), pulsa "Calificar mis 6 pares" y
+   recibe score global + detalle por par + evidencia descargable.
 
-### Cómo correrlo (dinámica de mesa)
+### Cómo correrlo en clase
 
-> "Cada mesa va a recibir un perfil de MiPyME diferente — yo les digo cuál.
-> Su tarea: en 10 minutos, leen las fichas de paqueterías y deciden cuál
-> usarían y por qué. Después le dicen al sistema su elección. Si sacan más de
-> 80%, ¡pueden descargar evidencia de su match perfecto!"
+> "Abran LogiMatch. Primero vayan al **catálogo de fichas** para entender cada
+> MiPyME y cada paquetería. Pueden tardarse 5 minutos leyendo. Después, en la
+> pestaña **Hacer el examen**, escriben su nombre y asignan la paquetería que
+> creen mejor para cada MiPyME. Al final pulsan calificar y descargan la
+> evidencia que van a subir al LMS."
 
-### Asignación sugerida de mesas
+### Cómo correrlo asincrónico
 
-| Mesa | MiPyME | Match perfecto |
+Manda el link directo: `<https://ecommercetoolslearning.vercel.app/logimatch>`
+y un instructivo en el LMS. El alumno entra, resuelve, descarga su evidencia
+y la sube. No depende de horario.
+
+### Calificación que el sistema entrega
+
+| Score | Nivel | Significado |
 |---|---|---|
-| 1-3 | Pastelería "Dulce Agua" | Uber Direct o Cadete Local (100%) |
-| 4-6 | Joyería "Luz de Plata" | FedEx o DHL (100%) |
-| 7-9 | Ropa "Oficina + Casual" | Estafeta (100%) |
-| 10-12 | Electrónicos "Gadgetzac" | 99 Minutos o FedEx (100%) |
-| 13-14 | Cosmética "Agave Bello" | Estafeta o 99 Minutos (95%) |
-| 15 | Alimentos "Despensa Seca" | Estafeta (100%) |
+| 90-100% | **Excelente** | Dominas la lógica de canales por perfil. |
+| 75-89% | **Bueno** | Panorama claro, afinación fina en algunos perfiles. |
+| 60-74% | **Regular** | Identificas lo básico; revisa las fichas. |
+| <60% | **Necesita reforzar** | Varios perfiles mal pareados. |
 
-### El veredicto trampa
+### Pares perfectos esperados (matriz)
 
-**Pastelería + FedEx/DHL/Estafeta = 20% Match con alerta de fracaso**:
+| MiPyME | Paquetería(s) óptima(s) | Score |
+|---|---|---|
+| Pastelería "Dulce Agua" | Uber Direct **o** Cadete Local | 100% |
+| Joyería "Luz de Plata" | FedEx **o** DHL | 100% |
+| Ropa "Oficina + Casual" | Estafeta | 100% |
+| Electrónicos "Gadgetzac" | 99 Minutos **o** FedEx | 100% |
+| Cosmética "Agave Bello" | Estafeta **o** 99 Minutos | 95% |
+| Alimentos "Despensa Seca" | Estafeta | 100% |
+
+### El error trampa
+
+**Pastelería + FedEx/DHL/Estafeta = 20%** con alerta de fracaso:
 
 > "🚨 ¡Fracaso total! El pastel pasó 3 días en tránsito terrestre, se derritió
 > y llegó destruido."
 
-Es el caso pedagógico más fuerte. **Provoca a una mesa** a probar la
-combinación incorrecta para que vean la alerta.
+Si un alumno saca <60%, es señal de que pareó la pastelería con paquetería
+terrestre. Buen punto para discutir en clase.
 
 ### La evidencia descargable
 
-Al pulsar "💾 Guardar evidencia de subasta" descarga un `.txt` con:
+Al pulsar "💾 Descargar evidencia para el LMS" descarga un `.txt` con:
 
-- Número de mesa.
-- MiPyME evaluada.
-- Paquetería asignada.
-- Score y feedback.
+- Nombre del alumno.
+- Calificación final (0-100%) y nivel.
+- Pares perfectos (>=95%) acertados.
+- Pares aceptables (>=80%) acertados.
+- **Detalle de cada uno de los 6 pares**: MiPyME, paquetería asignada,
+  score del par, feedback de la consultoría.
 - Fecha y hora.
 
-**Las mesas suben este `.txt` al LMS** como entregable. Tú abres el archivo y
-ves el match en 5 segundos.
+El nombre del archivo es `logimatch-{nombre-alumno}-{score}pct.txt`. **Para
+los 80 alumnos, llegan archivos con el mismo formato y nombre estándar**.
+Puedes abrirlos en bulk y calificarlos en minutos.
 
-### Errores típicos en clase
+### Tarea sugerida
 
-- Mesa elige Cadete Local para electrónicos pensando en "cuidado del paquete":
-  saca 40% porque Cadete solo cubre Aguascalientes y el 60% del catálogo es
-  CDMX/GDL/MTY. Buen punto para discutir cobertura > cuidado.
-- Mesa elige FedEx para ropa de margen bajo: saca 45% porque premium come el
-  margen. Buen punto para discutir costo > velocidad.
+> "Suban su evidencia al LMS junto con una reflexión de 100 palabras: ¿qué
+> par les costó más? ¿Qué cambiarías si tuvieras que volver a empezar?"
 
 ---
 

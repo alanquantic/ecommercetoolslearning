@@ -204,31 +204,31 @@ try {
   await expectVisible(page.getByText(/Coleccionista de horrores/i));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /Subasta por mesa\s+LogiMatch/ }).click();
+  await page.getByRole("button", { name: /Examen individual\s+LogiMatch/ }).click();
   if (!page.url().endsWith("/logimatch")) {
     throw new Error(`LogiMatch deberia vivir en /logimatch. URL actual: ${page.url()}`);
   }
   await expectVisible(page.getByRole("heading", { name: /LogiMatch/ }));
   await expectVisible(page.getByRole("heading", { name: /Paqueterias/ }));
-  await page.getByRole("button", { name: /Simulador de subasta/ }).click();
-  await expectVisible(page.getByRole("heading", { name: /Identifica tu mesa/ }));
-  await page.locator("#logimatch-table").selectOption("7");
-  await page.getByRole("button", { name: /Pasteleria "Dulce Agua"/ }).click();
-  const uberCard = page.locator(".logimatch-auction-carrier").filter({ hasText: "Uber Direct" });
-  await uberCard.getByRole("button", { name: /Asignar y evaluar/ }).click();
-  await expectVisible(page.getByText("100%", { exact: true }));
-  await expectVisible(page.getByText(/Excelente decision/));
+  await page.getByRole("button", { name: /Hacer el examen/ }).click();
+  await expectVisible(page.getByRole("heading", { name: /Quien resuelve el examen/i }));
+  await page.locator("#logimatch-student").fill("Andrea Lopez");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="bakery"]').selectOption("uber");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="jewelry"]').selectOption("fedex");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="clothing"]').selectOption("estafeta");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="electronics"]').selectOption("min99");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="cosmetics"]').selectOption("estafeta");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="food"]').selectOption("estafeta");
+  await page.getByRole("button", { name: /Calificar mis 6 pares/i }).click();
+  await expectVisible(page.getByText(/Examen calificado:/i));
+  await expectVisible(page.getByText(/Detalle por par/));
   const matchDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Guardar evidencia/ }).click();
+  await page.getByRole("button", { name: /Descargar evidencia/i }).click();
   const matchDownload = await matchDownloadPromise;
   const matchDownloadName = matchDownload.suggestedFilename();
-  if (!matchDownloadName.startsWith("logimatch-mesa-7-bakery-uber")) {
+  if (!matchDownloadName.startsWith("logimatch-andrea-lopez")) {
     throw new Error(`Evidencia con nombre inesperado: ${matchDownloadName}`);
   }
-  const fedexCard = page.locator(".logimatch-auction-carrier").filter({ hasText: "FedEx" });
-  await fedexCard.getByRole("button", { name: /Asignar y evaluar/ }).click();
-  await expectVisible(page.getByText("20%", { exact: true }));
-  await expectVisible(page.getByText(/Fracaso total/));
   await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
 
   await page.getByRole("button", { name: /Auditoria\s+LogiCoach/ }).click();

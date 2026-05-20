@@ -73,12 +73,13 @@ import {
   buildEvidenceFilename as buildMatchEvidenceFilename,
   buildEvidenceReceipt as buildMatchEvidenceReceipt,
   createDefaultLogiMatchState,
-  evaluateLogiMatch,
+  evaluateAllPairs as evaluateMatchAllPairs,
+  getAssignedCount as getMatchAssignedCount,
   getCarrierById as getMatchCarrier,
   getCarriers as getMatchCarriers,
   getMipymeById as getMatchMipyme,
   getMipymes as getMatchMipymes,
-  getTableOptionsForMatch,
+  isExamReady as isMatchExamReady,
   normalizeLogiMatchState,
 } from "./lib/logimatch.js";
 import {
@@ -176,9 +177,9 @@ const TOOL_GROUPS = [
       },
       {
         id: "logimatch",
-        kicker: "Subasta por mesa",
+        kicker: "Examen individual",
         title: "LogiMatch",
-        description: "Empareja paqueterias con MiPyMEs y descarga la evidencia.",
+        description: "Empareja las 6 MiPyMEs con su paqueteria ideal y recibe una calificacion 0-100.",
       },
     ],
   },
@@ -2268,19 +2269,27 @@ function renderLogiBingoTool() {
 
 function renderLogiMatchTool() {
   const match = state.logimatch;
-  const activeTab = match.activeTab === "auction" ? "auction" : "catalog";
+  const activeTab = match.activeTab === "exam" ? "exam" : "catalog";
   const carriers = getMatchCarriers();
   const mipymes = getMatchMipymes();
 
   renderToolShell(`
     <section class="screen panel-enter logimatch-shell">
       <article class="surface-card logimatch-intro">
-        <p class="eyebrow">Subasta logistica</p>
-        <h2>LogiMatch: la subasta de paqueterias</h2>
+        <p class="eyebrow">Examen interactivo</p>
+        <h2>LogiMatch: empareja MiPyME con paqueteria</h2>
         <p class="text-muted">
-          Trabaja en mesa. Selecciona una MiPyME, asigna una paqueteria y deja que el algoritmo de la consultoria
-          publique el veredicto. Cuando logres el mejor match, descarga la evidencia para tu profesor.
+          Cada MiPyME tiene un perfil distinto (urgencia, fragilidad, cobertura, ticket).
+          Lee las 6 fichas y asigna a cada una la paqueteria que mejor le acomode.
+          El sistema te califica los 6 pares al final.
         </p>
+        ${renderHowToPlay({
+          steps: [
+            "Revisa el <strong>catalogo de fichas</strong> para entender que necesita cada MiPyME y que ofrece cada paqueteria.",
+            "En el <strong>examen</strong>, escribe tu nombre y asigna una paqueteria a cada una de las 6 MiPyMEs.",
+            "Cuando completes los 6 pares pulsa <strong>calificar</strong>, descarga la evidencia y subela al LMS.",
+          ],
+        })}
       </article>
 
       <nav class="logimatch-tabs" aria-label="Secciones de LogiMatch">
@@ -2297,14 +2306,14 @@ function renderLogiMatchTool() {
           type="button"
           class="logimatch-tab"
           data-action="logimatch-tab"
-          data-tab="auction"
-          data-active="${activeTab === "auction"}"
+          data-tab="exam"
+          data-active="${activeTab === "exam"}"
         >
-          🔨 Simulador de subasta
+          ✅ Hacer el examen
         </button>
       </nav>
 
-      ${activeTab === "catalog" ? renderLogiMatchCatalog(carriers, mipymes) : renderLogiMatchAuction(match, carriers, mipymes)}
+      ${activeTab === "catalog" ? renderLogiMatchCatalog(carriers, mipymes) : renderLogiMatchExam(match, carriers, mipymes)}
     </section>
   `);
 }
@@ -2395,134 +2404,131 @@ function renderMipymeCard(mipyme) {
   `;
 }
 
-function renderLogiMatchAuction(match, carriers, mipymes) {
-  const tableOptions = getTableOptionsForMatch();
-  const selectedMipyme = mipymes.find((mp) => mp.id === match.selectedMipyme) || mipymes[0];
-  const selectedCarrierId = match.selectedCarrier;
+function renderLogiMatchExam(match, carriers, mipymes) {
+  const studentName = match.studentName || "";
+  const assignments = match.assignments || {};
+  const assignedCount = getMatchAssignedCount(assignments);
+  const totalPairs = mipymes.length;
+  const ready = isMatchExamReady(match);
   const result = match.result;
-  const hasTable = Boolean(match.tableNumber);
+  const progressPercent = Math.round((assignedCount / totalPairs) * 100);
 
-  const carouselButtons = mipymes
+  if (result) {
+    return renderLogiMatchExamResult(result, mipymes);
+  }
+
+  const pairCards = mipymes
     .map(
       (mipyme) => `
-        <button
-          type="button"
-          class="logimatch-mipyme-pill"
-          data-action="logimatch-select-mipyme"
-          data-mipyme="${escapeHtml(mipyme.id)}"
-          data-active="${match.selectedMipyme === mipyme.id}"
-        >
-          <span class="logimatch-mipyme-pill-name">${escapeHtml(mipyme.name)}</span>
-          <span class="logimatch-mipyme-pill-meta">${escapeHtml(mipyme.headline)}</span>
-        </button>
-      `,
-    )
-    .join("");
-
-  const carrierGrid = carriers
-    .map(
-      (carrier) => `
-        <article
-          class="logimatch-auction-carrier"
-          data-active="${selectedCarrierId === carrier.id}"
-          aria-label="${escapeHtml(carrier.name)}"
-        >
+        <article class="logimatch-pair-card" data-state="${assignments[mipyme.id] ? "filled" : "empty"}">
           <header>
-            <h4>${escapeHtml(carrier.name)}</h4>
-            <p>${escapeHtml(carrier.nickname)}</p>
+            <h4>${escapeHtml(mipyme.name)}</h4>
+            <p>${escapeHtml(mipyme.headline)}</p>
           </header>
-          <ul class="logimatch-auction-carrier-meta">
-            <li><strong>Cobertura:</strong> ${escapeHtml(carrier.coverage)}</li>
-            <li><strong>Tiempo:</strong> ${escapeHtml(carrier.time)}</li>
-            <li><strong>Costo:</strong> ${escapeHtml(carrier.cost)}</li>
-          </ul>
-          <button
-            type="button"
-            class="logimatch-assign-button"
-            data-action="logimatch-evaluate"
-            data-carrier="${escapeHtml(carrier.id)}"
-            ${hasTable ? "" : "disabled"}
+          <div class="logimatch-card-badges">
+            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">Fragilidad: ${escapeHtml(mipyme.fragility.label)}</span>
+            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">Urgencia: ${escapeHtml(mipyme.urgency.label)}</span>
+            <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(mipyme.ticket)}</span>
+          </div>
+          <p class="logimatch-pair-priority"><strong>Lo que mas le importa:</strong> ${escapeHtml(mipyme.priority)}</p>
+          <label class="logimatch-pair-select-label" for="logimatch-assign-${escapeHtml(mipyme.id)}">
+            Paqueteria asignada
+          </label>
+          <select
+            id="logimatch-assign-${escapeHtml(mipyme.id)}"
+            class="logimatch-select"
+            data-input="logimatch-assignment"
+            data-mipyme="${escapeHtml(mipyme.id)}"
           >
-            ⚡ Asignar y evaluar combinacion
-          </button>
+            <option value="">Selecciona una paqueteria...</option>
+            ${carriers
+              .map(
+                (carrier) => `
+                  <option value="${escapeHtml(carrier.id)}" ${assignments[mipyme.id] === carrier.id ? "selected" : ""}>
+                    ${escapeHtml(carrier.name)} — ${escapeHtml(carrier.nickname)}
+                  </option>
+                `,
+              )
+              .join("")}
+          </select>
         </article>
       `,
     )
     .join("");
 
   return `
-    <ol class="logimatch-steps">
-      <li class="logimatch-step" data-done="${hasTable}">
-        <span class="logimatch-step-index">1</span>
-        <div>
-          <h3>Identifica tu mesa</h3>
-          <p class="text-muted">El numero de mesa aparecera en la evidencia descargable.</p>
-          <label class="logimatch-table-label" for="logimatch-table">Numero de mesa / equipo</label>
-          <select
-            id="logimatch-table"
-            class="logimatch-select"
-            data-input="logimatch-table"
-            aria-required="true"
-          >
-            <option value="">Selecciona...</option>
-            ${tableOptions
-              .map(
-                (value) => `
-                  <option value="${value}" ${match.tableNumber === String(value) ? "selected" : ""}>
-                    Mesa ${value}
-                  </option>
-                `,
-              )
-              .join("")}
-          </select>
-        </div>
-      </li>
+    <div class="logimatch-exam">
+      <article class="logimatch-exam-identity">
+        <h3>1. ¿Quien resuelve el examen?</h3>
+        <p class="text-muted">Escribe tu nombre completo. Aparecera en la evidencia que entregas al profesor.</p>
+        <label class="visually-hidden" for="logimatch-student">Nombre del alumno</label>
+        <input
+          id="logimatch-student"
+          class="logimatch-input"
+          type="text"
+          maxlength="80"
+          autocomplete="name"
+          placeholder="Ej. Andrea Lopez"
+          value="${escapeHtml(studentName)}"
+          data-input="logimatch-student"
+        >
+      </article>
 
-      <li class="logimatch-step" data-done="${Boolean(selectedMipyme)}">
-        <span class="logimatch-step-index">2</span>
-        <div>
-          <h3>Elige perfil y paqueteria</h3>
-          <p class="text-muted">Activa una MiPyME y pulsa "Asignar" en la paqueteria que quieras evaluar.</p>
-          <div class="logimatch-carousel" role="listbox" aria-label="Perfiles de MiPyME">${carouselButtons}</div>
-          <article class="logimatch-active-mipyme" aria-live="polite">
-            <header>
-              <h4>${escapeHtml(selectedMipyme.name)}</h4>
-              <span>${escapeHtml(selectedMipyme.headline)}</span>
-            </header>
-            <p class="text-muted"><strong>Prioridad:</strong> ${escapeHtml(selectedMipyme.priority)}</p>
-            <div class="logimatch-card-badges">
-              <span class="logimatch-badge" data-tone="${escapeHtml(selectedMipyme.fragility.tone)}">Fragilidad: ${escapeHtml(selectedMipyme.fragility.label)}</span>
-              <span class="logimatch-badge" data-tone="${escapeHtml(selectedMipyme.urgency.tone)}">Urgencia: ${escapeHtml(selectedMipyme.urgency.label)}</span>
-              <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(selectedMipyme.ticket)}</span>
-            </div>
-          </article>
-          <div class="logimatch-auction-grid">${carrierGrid}</div>
-          ${
-            hasTable
-              ? ""
-              : '<p class="logimatch-warning">Selecciona primero tu numero de mesa para habilitar las evaluaciones.</p>'
-          }
+      <article class="logimatch-exam-progress">
+        <div class="logimatch-exam-progress-header">
+          <div>
+            <h3>2. Empareja las 6 MiPyMEs con su paqueteria</h3>
+            <p class="text-muted">Lee el perfil y elige la opcion que mejor le acomode. Puedes cambiarla cuantas veces quieras antes de calificar.</p>
+          </div>
+          <span class="logimatch-exam-counter">${assignedCount} / ${totalPairs}</span>
         </div>
-      </li>
+        <div class="logimatch-exam-progress-bar"><span style="width: ${progressPercent}%"></span></div>
+      </article>
 
-      <li class="logimatch-step" data-done="${Boolean(result)}">
-        <span class="logimatch-step-index">3</span>
-        <div>
-          <h3>Veredicto y evidencia</h3>
-          <p class="text-muted">El medidor circular y el feedback son la salida oficial de la subasta.</p>
-          ${result ? renderLogiMatchResult(result) : renderLogiMatchEmptyResult()}
-        </div>
-      </li>
-    </ol>
+      <div class="logimatch-pair-grid">${pairCards}</div>
+
+      <footer class="logimatch-exam-footer">
+        <button
+          type="button"
+          class="primary-button"
+          data-action="logimatch-grade"
+          ${ready ? "" : "disabled"}
+        >
+          ✅ Calificar mis 6 pares
+        </button>
+        <button type="button" class="ghost-button" data-action="logimatch-reset">Empezar de nuevo</button>
+        ${ready ? "" : '<p class="logimatch-warning">Completa tu nombre y asigna una paqueteria a cada MiPyME para habilitar el boton.</p>'}
+      </footer>
+    </div>
   `;
 }
 
-function renderLogiMatchResult(result) {
-  const circumference = 2 * Math.PI * 56;
-  const offset = circumference * (1 - Math.max(0, Math.min(100, result.score)) / 100);
+function renderLogiMatchExamResult(result, mipymes) {
+  const radius = 56;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - Math.max(0, Math.min(100, result.overallScore)) / 100);
+  const mipymeOrder = mipymes.map((m) => m.id);
+  const sortedPairs = [...result.pairs].sort((a, b) => mipymeOrder.indexOf(a.mipymeId) - mipymeOrder.indexOf(b.mipymeId));
+
+  const detailCards = sortedPairs
+    .map(
+      (pair) => `
+        <article class="logimatch-pair-result" data-tone="${escapeHtml(pair.tone)}">
+          <header>
+            <h4>${escapeHtml(pair.mipymeName)}</h4>
+            <span class="logimatch-pair-result-score">${pair.score}%</span>
+          </header>
+          <p class="logimatch-pair-result-carrier"><strong>Asignaste:</strong> ${escapeHtml(pair.carrierName)}</p>
+          <p class="logimatch-pair-result-feedback" data-alert="${pair.alert}">
+            ${pair.alert ? "🚨 " : ""}${escapeHtml(pair.feedback)}
+          </p>
+        </article>
+      `,
+    )
+    .join("");
 
   return `
-    <div class="logimatch-result" data-tone="${escapeHtml(result.tone)}">
+    <div class="logimatch-result" data-tone="${escapeHtml(result.grade?.tone || "warning")}">
       <div class="logimatch-result-meter" aria-hidden="true">
         <svg viewBox="0 0 140 140" class="logimatch-gauge">
           <circle class="logimatch-gauge-track" cx="70" cy="70" r="56"></circle>
@@ -2536,34 +2542,28 @@ function renderLogiMatchResult(result) {
           ></circle>
         </svg>
         <div class="logimatch-gauge-number">
-          <strong>${result.score}%</strong>
-          <span>Match</span>
+          <strong>${result.overallScore}%</strong>
+          <span>${escapeHtml(result.grade?.label || "")}</span>
         </div>
       </div>
       <div class="logimatch-result-content">
         <p class="logimatch-result-pair">
-          <span><strong>Mesa</strong> ${escapeHtml(result.tableNumber || "N/A")}</span>
-          <span><strong>MiPyME</strong> ${escapeHtml(result.mipymeName)}</span>
-          <span><strong>Paqueteria</strong> ${escapeHtml(result.carrierName)}</span>
+          <span><strong>Alumno</strong> ${escapeHtml(result.studentName || "(sin nombre)")}</span>
+          <span><strong>Pares perfectos</strong> ${result.perfectMatches} / ${result.totalPairs}</span>
+          <span><strong>Pares aceptables</strong> ${result.goodMatches} / ${result.totalPairs}</span>
         </p>
-        <p class="logimatch-result-feedback" data-alert="${result.alert}">
-          ${result.alert ? "🚨 " : ""}${escapeHtml(result.feedback)}
-        </p>
+        <p class="logimatch-result-feedback">${escapeHtml(result.grade?.detail || "")}</p>
         <div class="logimatch-result-actions">
-          <button type="button" class="primary-button" data-action="logimatch-download">💾 Guardar evidencia de subasta</button>
-          <button type="button" class="ghost-button" data-action="logimatch-reset">Probar otra combinacion</button>
+          <button type="button" class="primary-button" data-action="logimatch-download">💾 Descargar evidencia para el LMS</button>
+          <button type="button" class="ghost-button" data-action="logimatch-retake">Volver a intentar</button>
         </div>
       </div>
     </div>
-  `;
-}
 
-function renderLogiMatchEmptyResult() {
-  return `
-    <div class="logimatch-result-empty">
-      <p>Aun no evaluas combinaciones.</p>
-      <p class="text-muted">Cuando pulses "Asignar y evaluar combinacion" mostraremos el medidor circular, el feedback y el boton para descargar la evidencia.</p>
-    </div>
+    <section class="logimatch-pair-results">
+      <h3>Detalle por par</h3>
+      <div class="logimatch-pair-results-grid">${detailCards}</div>
+    </section>
   `;
 }
 
@@ -3343,12 +3343,32 @@ function handleInput(event) {
     return;
   }
 
-  const matchTable = event.target.closest('[data-input="logimatch-table"]');
-  if (matchTable && state.activeTool === "logimatch") {
-    state.logimatch = normalizeLogiMatchState({
+  const matchStudent = event.target.closest('[data-input="logimatch-student"]');
+  if (matchStudent && state.activeTool === "logimatch") {
+    state.logimatch = {
       ...state.logimatch,
-      tableNumber: matchTable.value,
-    });
+      studentName: matchStudent.value,
+      result: null,
+    };
+    persistState();
+    const button = appRoot.querySelector('[data-action="logimatch-grade"]');
+    if (button) {
+      button.disabled = !isMatchExamReady(state.logimatch);
+    }
+    return;
+  }
+
+  const matchAssignment = event.target.closest('[data-input="logimatch-assignment"]');
+  if (matchAssignment && state.activeTool === "logimatch") {
+    const mipymeId = matchAssignment.dataset.mipyme;
+    if (!mipymeId) {
+      return;
+    }
+    state.logimatch = {
+      ...state.logimatch,
+      assignments: { ...state.logimatch.assignments, [mipymeId]: matchAssignment.value },
+      result: null,
+    };
     persistState();
     render();
     return;
@@ -3487,7 +3507,7 @@ async function sendLogiBingoAnecdote() {
 }
 
 function setLogiMatchTab(tab) {
-  const next = tab === "auction" ? "auction" : "catalog";
+  const next = tab === "exam" ? "exam" : "catalog";
   if (state.logimatch.activeTab === next) {
     return;
   }
@@ -3496,54 +3516,35 @@ function setLogiMatchTab(tab) {
   render();
 }
 
-function selectLogiMatchMipyme(mipymeId) {
-  if (!getMatchMipyme(mipymeId)) {
+function gradeLogiMatchExam() {
+  if (!isMatchExamReady(state.logimatch)) {
+    showToast("Completa tu nombre y los 6 pares antes de calificar.");
     return;
   }
-  if (state.logimatch.selectedMipyme === mipymeId && !state.logimatch.result) {
-    return;
-  }
+  const result = evaluateMatchAllPairs(state.logimatch.assignments, state.logimatch.studentName);
+  state.logimatch = { ...state.logimatch, result };
+  persistState();
+  render();
+  showToast(`Examen calificado: ${result.overallScore}% (${result.grade.label}).`);
+}
+
+function retakeLogiMatchExam() {
   state.logimatch = {
     ...state.logimatch,
-    selectedMipyme: mipymeId,
-    selectedCarrier: "",
     result: null,
   };
   persistState();
   render();
 }
 
-function evaluateLogiMatchCombo(carrierId) {
-  if (!state.logimatch.tableNumber) {
-    showToast("Selecciona primero tu numero de mesa.");
-    return;
-  }
-  const result = evaluateLogiMatch({
-    mipymeId: state.logimatch.selectedMipyme,
-    carrierId,
-    tableNumber: state.logimatch.tableNumber,
-  });
-  if (!result) {
-    showToast("No fue posible evaluar la combinacion.");
-    return;
-  }
+function resetLogiMatchExam() {
   state.logimatch = {
-    ...state.logimatch,
-    selectedCarrier: carrierId,
-    result,
+    ...createDefaultLogiMatchState(),
+    activeTab: "exam",
   };
   persistState();
   render();
-}
-
-function resetLogiMatchResult() {
-  state.logimatch = {
-    ...state.logimatch,
-    selectedCarrier: "",
-    result: null,
-  };
-  persistState();
-  render();
+  showToast("Examen reiniciado. Vuelve a empezar.");
 }
 
 function downloadLogiMatchEvidence() {
@@ -3701,14 +3702,14 @@ function handleClick(event) {
     case "logimatch-tab":
       setLogiMatchTab(actionButton.dataset.tab);
       break;
-    case "logimatch-select-mipyme":
-      selectLogiMatchMipyme(actionButton.dataset.mipyme);
+    case "logimatch-grade":
+      gradeLogiMatchExam();
       break;
-    case "logimatch-evaluate":
-      evaluateLogiMatchCombo(actionButton.dataset.carrier);
+    case "logimatch-retake":
+      retakeLogiMatchExam();
       break;
     case "logimatch-reset":
-      resetLogiMatchResult();
+      resetLogiMatchExam();
       break;
     case "logimatch-download":
       downloadLogiMatchEvidence();
