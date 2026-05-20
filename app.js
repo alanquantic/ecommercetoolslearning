@@ -131,6 +131,85 @@ const TOOL_ROUTES = {
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
+const TOOL_GROUPS = [
+  {
+    id: "strategy",
+    label: "Antes de operar",
+    description: "Decision estrategica del modelo de venta.",
+    tools: [
+      {
+        id: "diagnosis",
+        kicker: "Diagnostico inicial",
+        title: "Diagnostico de ruta",
+        description: "Decide entre tienda propia, marketplace o modelo hibrido.",
+      },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Operacion de la tienda",
+    description: "Herramientas de creacion y comunicacion con cliente.",
+    tools: [
+      {
+        id: "wireframe",
+        kicker: "Pagina de producto",
+        title: "Ficha de producto",
+        description: "Genera un wireframe ideal para que la pagina convierta mejor.",
+      },
+      {
+        id: "messages",
+        kicker: "Comunicacion de venta",
+        title: "Mensajes de tienda",
+        description: "Respuestas claras para venta, pagos y postventa.",
+      },
+      {
+        id: "logistics",
+        kicker: "Comunicacion logistica",
+        title: "Logistica clara",
+        description: "Tiempos, guias y retrasos convertidos en mensajes confiables.",
+      },
+      {
+        id: "volumetric",
+        kicker: "Calculo de envio",
+        title: "Peso volumetrico",
+        description: "Simula cajas y descubre cuanto aire te cobra la paqueteria.",
+      },
+    ],
+  },
+  {
+    id: "classroom",
+    label: "Dinamica en clase",
+    description: "Ejercicios grupales para 80 alumnos en mesa.",
+    tools: [
+      {
+        id: "logibingo",
+        kicker: "Rompehielos",
+        title: "LogiBingo",
+        description: "Bingo de horrores logisticos con anecdotas anonimas al profesor.",
+      },
+      {
+        id: "logimatch",
+        kicker: "Subasta por mesa",
+        title: "LogiMatch",
+        description: "Empareja paqueterias con MiPyMEs y descarga la evidencia.",
+      },
+    ],
+  },
+  {
+    id: "audit",
+    label: "Diagnostico operativo",
+    description: "Para alumnos que ya tienen plan en marcha.",
+    tools: [
+      {
+        id: "logicoach",
+        kicker: "Auditoria",
+        title: "LogiCoach",
+        description: "Wizard de 12 preguntas, alertas y formato listo para LMS.",
+      },
+    ],
+  },
+];
+
 const questions = [
   {
     id: "costo",
@@ -592,111 +671,40 @@ function clearIntake() {
 }
 
 function buildToolSwitcherMarkup() {
+  const groupsMarkup = TOOL_GROUPS.map((group) => {
+    const tabs = group.tools
+      .map(
+        (tool) => `
+          <button
+            class="tool-tab"
+            type="button"
+            data-action="switch-tool"
+            data-tool="${tool.id}"
+            data-route="${TOOL_ROUTES[tool.id]}"
+            data-active="${state.activeTool === tool.id}"
+          >
+            <span class="tool-tab-kicker">${escapeHtml(tool.kicker)}</span>
+            <strong>${escapeHtml(tool.title)}</strong>
+            <span>${escapeHtml(tool.description)}</span>
+          </button>
+        `,
+      )
+      .join("");
+
+    return `
+      <section class="tool-group" data-group="${group.id}">
+        <header class="tool-group-header">
+          <h2 class="tool-group-title">${escapeHtml(group.label)}</h2>
+          <p class="tool-group-description">${escapeHtml(group.description)}</p>
+        </header>
+        <div class="tool-group-tabs">${tabs}</div>
+      </section>
+    `;
+  }).join("");
+
   return `
     <nav class="tool-switcher" aria-label="Herramientas disponibles">
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="diagnosis"
-        data-route="${TOOL_ROUTES.diagnosis}"
-        data-active="${state.activeTool === "diagnosis"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 1</span>
-        <strong>Diagnostico de ruta</strong>
-        <span>Decide entre tienda propia, marketplace o modelo hibrido.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="wireframe"
-        data-route="${TOOL_ROUTES.wireframe}"
-        data-active="${state.activeTool === "wireframe"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 2</span>
-        <strong>Ficha de producto</strong>
-        <span>Genera un wireframe ideal para una pagina que convierta mejor.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="messages"
-        data-route="${TOOL_ROUTES.messages}"
-        data-active="${state.activeTool === "messages"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 3</span>
-        <strong>Mensajes de tienda</strong>
-        <span>Crea respuestas claras para venta, envio, retrasos y postventa.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="logistics"
-        data-route="${TOOL_ROUTES.logistics}"
-        data-active="${state.activeTool === "logistics"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 4</span>
-        <strong>Logistica clara</strong>
-        <span>Convierte tiempos, guias y retrasos en mensajes confiables.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="volumetric"
-        data-route="${TOOL_ROUTES.volumetric}"
-        data-active="${state.activeTool === "volumetric"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 5</span>
-        <strong>Peso volumetrico</strong>
-        <span>Simula cajas y descubre cuanto aire te cobra la paqueteria.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="logibingo"
-        data-route="${TOOL_ROUTES.logibingo}"
-        data-active="${state.activeTool === "logibingo"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 6</span>
-        <strong>LogiBingo</strong>
-        <span>Bingo de los horrores logisticos para dinamicas en clase.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="logimatch"
-        data-route="${TOOL_ROUTES.logimatch}"
-        data-active="${state.activeTool === "logimatch"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 7</span>
-        <strong>LogiMatch</strong>
-        <span>Subasta de paqueterias por mesa con veredicto y evidencia.</span>
-      </button>
-
-      <button
-        class="tool-tab"
-        type="button"
-        data-action="switch-tool"
-        data-tool="logicoach"
-        data-route="${TOOL_ROUTES.logicoach}"
-        data-active="${state.activeTool === "logicoach"}"
-      >
-        <span class="tool-tab-kicker">Herramienta 8</span>
-        <strong>LogiCoach</strong>
-        <span>Wizard de 12 preguntas con auditoria automatica y entrega lista para LMS.</span>
-      </button>
+      ${groupsMarkup}
     </nav>
   `;
 }
@@ -710,16 +718,8 @@ function renderToolShell(screenMarkup) {
 }
 
 function scrollActiveToolTabIntoView() {
-  window.requestAnimationFrame(() => {
-    const switcher = appRoot.querySelector(".tool-switcher");
-    const activeTab = appRoot.querySelector('.tool-tab[data-active="true"]');
-    if (!switcher || !activeTab) {
-      return;
-    }
-
-    const targetLeft = activeTab.offsetLeft - (switcher.clientWidth - activeTab.clientWidth) / 2;
-    switcher.scrollLeft = Math.max(0, targetLeft);
-  });
+  // El switcher ahora se renderiza en cuadricula (sin scroll horizontal).
+  // Mantenemos la firma por compatibilidad; no es necesario reposicionar.
 }
 
 function render() {

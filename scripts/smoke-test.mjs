@@ -177,7 +177,7 @@ try {
   await expectVisible(page.getByText("$570 MXN estimados"));
   await page.screenshot({ path: path.join(outputDir, "peso-volumetrico.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /^LogiBingo/ }).click();
+  await page.getByRole("button", { name: /Rompehielos\s+LogiBingo/ }).click();
   if (!page.url().endsWith("/logibingo")) {
     throw new Error(`LogiBingo deberia vivir en /logibingo. URL actual: ${page.url()}`);
   }
@@ -204,7 +204,7 @@ try {
   await expectVisible(page.getByText(/Iman de Perdidas Operativas|Imán de Pérdidas Operativas/));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /^LogiMatch/ }).click();
+  await page.getByRole("button", { name: /Subasta por mesa\s+LogiMatch/ }).click();
   if (!page.url().endsWith("/logimatch")) {
     throw new Error(`LogiMatch deberia vivir en /logimatch. URL actual: ${page.url()}`);
   }
@@ -231,7 +231,7 @@ try {
   await expectVisible(page.getByText(/Fracaso total/));
   await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /^LogiCoach/ }).click();
+  await page.getByRole("button", { name: /Auditoria\s+LogiCoach/ }).click();
   if (!page.url().endsWith("/logicoach")) {
     throw new Error(`LogiCoach deberia vivir en /logicoach. URL actual: ${page.url()}`);
   }
