@@ -177,16 +177,41 @@ try {
   await expectVisible(page.getByText("$570 MXN estimados"));
   await page.screenshot({ path: path.join(outputDir, "peso-volumetrico.png"), fullPage: true });
 
+  await page.getByRole("button", { name: /logichallenged/i }).click();
+  if (!page.url().endsWith("/logichallenged")) {
+    throw new Error(`LogiChallenged deberia vivir en /logichallenged. URL actual: ${page.url()}`);
+  }
+  await expectVisible(page.getByRole("heading", { name: "LogiChallenged" }));
+  await expectVisible(page.getByText("Taller de Optimizacion"));
+  await expectVisible(page.getByText("12:00"));
+  await page.locator("#logi-table").selectOption("3");
+  await page.locator("#logi-store").fill("Wrap Lab");
+  await page.locator("#logi-product").selectOption("Bombillo o foco (Extremadamente frágil, dimensiones difíciles)");
+  await page.locator("#logi-price").fill("250");
+  await page.locator("#logi-weight").fill("0.4");
+  await page.getByRole("button", { name: /Caja Mediana/i }).click();
+  await page.locator(".logi-zone-group label").filter({ hasText: "Zona Extendida" }).click();
+  await expectVisible(page.getByText("¡Alerta de Costo!"));
+  await page.getByRole("button", { name: /Publicar empaque/i }).click();
+  await expectVisible(page.getByText("Empaque de Mesa 3 publicado"));
+  await page.getByRole("button", { name: /Galeria Walk/i }).click();
+  await expectVisible(page.getByText("Wrap Lab"));
+  await page.locator('[data-action="logi-filter"]').selectOption("3");
+  await expectVisible(page.locator(".logi-package-card").filter({ hasText: "Mesa 3" }));
+  await page.getByRole("button", { name: /Más Eficiente/i }).first().click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(outputDir, "logichallenged.png"), fullPage: true });
+
   const mobilePage = await browser.newPage({ viewport: { width: 390, height: 1200 }, isMobile: true });
-  await mobilePage.goto(`${baseUrl}/peso-volumetrico`, { waitUntil: "networkidle" });
-  await expectVisible(mobilePage.getByRole("heading", { name: /Peso volumetrico/ }));
+  await mobilePage.goto(`${baseUrl}/logichallenged`, { waitUntil: "networkidle" });
+  await expectVisible(mobilePage.getByRole("heading", { name: "LogiChallenged" }));
   const hasHorizontalOverflow = await mobilePage.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
   );
   if (hasHorizontalOverflow) {
-    throw new Error("La vista movil de peso volumetrico tiene overflow horizontal.");
+    throw new Error("La vista movil de LogiChallenged tiene overflow horizontal.");
   }
-  await mobilePage.screenshot({ path: path.join(outputDir, "peso-volumetrico-mobile.png"), fullPage: true });
+  await mobilePage.screenshot({ path: path.join(outputDir, "logichallenged-mobile.png"), fullPage: true });
   await mobilePage.close();
 
   if (pageErrors.length > 0) {
@@ -274,7 +299,14 @@ function createStaticServer(rootPath) {
       }
 
       const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
-      const routeFallbacks = new Set(["/diagnostico", "/ficha-producto", "/mensajes", "/logistica", "/peso-volumetrico"]);
+      const routeFallbacks = new Set([
+        "/diagnostico",
+        "/ficha-producto",
+        "/mensajes",
+        "/logistica",
+        "/peso-volumetrico",
+        "/logichallenged",
+      ]);
       const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
       const filePath = path.normalize(path.join(rootPath, pathToServe));
       const relativePath = path.relative(rootPath, filePath);

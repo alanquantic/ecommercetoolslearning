@@ -41,6 +41,7 @@ Esto:
 - Genera mensajes operativos para tienda en linea: bienvenida, producto, precio, pedido, pago, envio, retraso, entrega, postventa y cambios/devoluciones.
 - Genera mensajes de logistica clara para tiempos de entrega, confirmacion de pedido, avisos, retrasos y problemas.
 - Simula peso volumetrico, peso cobrable y costo estimado por kg con cajas estandar.
+- Facilita un taller LogiChallenged con registro por mesa, galeria y votacion de empaques.
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
@@ -78,6 +79,7 @@ Rutas publicas:
 - `/mensajes`
 - `/logistica`
 - `/peso-volumetrico`
+- `/logichallenged`
 
 Archivos relevantes:
 
