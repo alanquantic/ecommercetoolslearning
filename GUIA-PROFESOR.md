@@ -1,0 +1,502 @@
+# Guía del profesor · Ruta E-commerce
+
+Documento de bolsillo para llevar tu clase con las 8 herramientas. Pensado para
+diplomado de e-commerce, sesión de logística, ~80 alumnos en aula con escritorio
+o móvil.
+
+URL pública: <https://ecommercetoolslearning.vercel.app>
+
+---
+
+## Plan de sesión completa (3 horas)
+
+| Bloque | Minutos | Herramienta | Objetivo del alumno |
+|---|---|---|---|
+| 1. Apertura | 15 min | **LogiBingo** | Romper el hielo, compartir anécdotas reales de errores logísticos. |
+| 2. Decisión estratégica | 20 min | **Diagnóstico de ruta** | Decidir tienda propia vs marketplace vs híbrido para su proyecto. |
+| 3. Operación de tienda | 30 min | **Ficha de producto** + **Mensajes de tienda** | Generar página de producto y kit de mensajes con IA. |
+| 4. Logística operativa | 25 min | **Logística clara** + **Peso volumétrico** | Mensajes de envío y simulación de caja. |
+| 5. Dinámica grupal | 35 min | **LogiMatch** | Subasta de paqueterías por mesa con evidencia descargable. |
+| 6. Auditoría individual | 30 min | **LogiCoach** | Plan logístico personal, entrega Markdown al LMS. |
+| 7. Cierre | 15 min | Discusión con anécdotas recibidas | Lectura grupal de 3-4 anécdotas anónimas de LogiBingo. |
+
+---
+
+## Antes de empezar la sesión
+
+**Configura las variables de entorno en Vercel** si quieres modo IA real:
+
+- `OPENAI_API_KEY` — para Diagnóstico, Ficha, Mensajes y Logística clara.
+- `RESEND_API_KEY` — para envío de correos (resúmenes, anécdotas anónimas).
+- `REPORT_RECIPIENTS` — tu correo (y el de tus colegas, separado por coma).
+
+Si falta alguna, la app cae a "modo demostración" automáticamente. El alumno
+ve un badge amber. **Útil para clase**, pero los correos no llegan.
+
+**Prueba antes de clase:**
+
+1. Abre la app, ve a la home, deja el panel "Plan de sesión" abierto al
+   proyectar.
+2. Pasa por LogiBingo y completa una línea para asegurarte de que el modal de
+   anécdota se abre y enviar funciona (te debe llegar correo si Resend está
+   configurado).
+3. Verifica el badge "IA en vivo" en Diagnóstico al generar un análisis.
+
+---
+
+## Herramienta 1 · LogiBingo
+
+**URL:** `/logibingo` · **Tiempo:** 12-15 min · **Tab:** Dinámica en clase
+
+### Qué es
+
+Tablero 4×4 con 16 errores logísticos clásicos. Cada celda es un error. El
+alumno marca los que ya cometió vendiendo. Cada vez que completa una línea
+(fila, columna o diagonal) se abre un modal pidiendo que cuente, **de forma
+anónima**, su peor experiencia con ese error. La anécdota llega a tu correo.
+
+### Cómo presentarlo (script sugerido)
+
+> "Vamos a empezar con algo importante: TODOS hemos metido la pata en e-commerce.
+> Abre la herramienta LogiBingo. Vas a ver 16 errores comunes. **Marca solo los
+> que tú ya hiciste alguna vez** — no juzgues, sé honesto. Cuando completes una
+> línea, el sistema te va a pedir que cuentes tu peor experiencia con uno de
+> esos errores. **Es anónimo**, nadie verá tu nombre. Yo recibo todas las
+> anécdotas para discutirlas al final de la clase."
+
+### Lo que vas a ver tú
+
+- En tu bandeja de entrada (Resend → tu correo): un email por cada anécdota
+  enviada. Asunto: `LogiBingo · anecdota anonima: [error]`.
+- Cada correo trae el error que disparó la línea, cuántos errores marcó el
+  alumno (de 16) y el nivel de peligro (verde/ámbar/rojo).
+
+### Qué hacer al final de la clase
+
+Lee en voz alta 3-4 anécdotas que te parezcan más jugosas. Si los alumnos
+firmaron con detalles que los identifiquen, **pide consentimiento** antes de
+leerlas. Genera conversación: "¿A alguien más le ha pasado?".
+
+### Errores típicos que verás
+
+- "Vender producto agotado" suele ser el más marcado.
+- "Inventario solo en la cabeza" → señal de que necesitan Kardex.
+- "Cliente molesto sin respuesta" → tema para abrir discusión sobre tiempo de
+  respuesta.
+
+### Tu termómetro de peligro (lo que ven los alumnos)
+
+- 🟢 0-3 errores: Operador Junior Prudente.
+- 🟡 4-8 errores: Coordinador de Crisis Logísticas.
+- 🔴 9+ errores: Imán de Pérdidas Operativas.
+
+> Tip: muestra en pantalla un alumno con tablero en rojo y pregunta:
+> "¿Cuáles son los 3 errores que primero atacarías?".
+
+---
+
+## Herramienta 2 · Diagnóstico de ruta
+
+**URL:** `/diagnostico` · **Tiempo:** 15-20 min · **Tab:** Antes de operar
+
+### Qué es
+
+Quiz de 5 preguntas + contexto del proyecto. Recomienda tienda propia,
+marketplace o modelo híbrido. Genera análisis con IA (OpenAI) y envía un
+resumen por correo al alumno.
+
+### Cómo presentarlo
+
+> "Antes de invertir en una plataforma, hay que decidir el modelo. Esta
+> herramienta te pregunta 5 cosas sobre tu negocio y te da una recomendación
+> con argumentos. Pongan datos reales de su proyecto, no inventen — el análisis
+> se vuelve mucho más útil."
+
+### Campos del intake (lo que pide)
+
+- **Nombre y proyecto**: identifica al alumno.
+- **Correo**: aquí llega el resumen.
+- **Descripción del producto, cliente y modelo de negocio**: alimenta a la IA.
+- **Ticket promedio**: ayuda a calibrar la recomendación.
+- **Canal de ventas y mercado primario**: contexto operativo.
+
+### Lo que el alumno recibe por correo
+
+Un email con:
+- La ruta recomendada y por qué.
+- Por qué esa ruta encaja con su perfil.
+- Primer experimento sugerido.
+- Métricas a medir.
+
+Tú recibes copia con el contexto completo para conversar uno a uno si quieres.
+
+### Cómo interpretar resultados
+
+- **Tienda propia**: alumno con marca, comunidad y capital.
+- **Marketplace**: alumno con producto comparable o sin tracción.
+- **Híbrido**: alumno con catálogo mixto.
+
+Si la **afinidad es <70%**, el sistema lo marca como "perfil mixto" — buen
+punto para conversar en clase sobre orquestación de canales.
+
+---
+
+## Herramienta 3 · Ficha de producto
+
+**URL:** `/ficha-producto` · **Tiempo:** 15 min · **Tab:** Operación de la tienda
+
+### Qué es
+
+Genera un wireframe de página de producto a partir de la descripción del
+alumno: hero, fotos sugeridas, prueba social, FAQs, métricas a medir.
+
+### Cómo presentarlo
+
+> "Esta no es de logística, es de página de producto. Si su producto está en su
+> propia tienda, esto les da una guía visual de cómo armar la ficha que más
+> convierte. Describe tu producto en una sola frase clara."
+
+### Pista útil
+
+- Si describe el producto en menos de 20 palabras, el wireframe sale genérico.
+- Si pone "Pasteles artesanales con frutas locales para regalo en Aguascalientes"
+  → el wireframe se vuelve específico.
+
+### Qué entrega
+
+- Texto sugerido para hero y subtítulo.
+- 4 fotos clave con descripción de qué debe mostrar cada una.
+- 3 beneficios principales.
+- 5 preguntas frecuentes sugeridas.
+- Descargable como `.txt` para llevárselo.
+
+---
+
+## Herramienta 4 · Mensajes de tienda
+
+**URL:** `/mensajes` · **Tiempo:** 15 min · **Tab:** Operación de la tienda
+
+### Qué es
+
+Genera 10 mensajes operativos listos para copiar a WhatsApp/email: bienvenida,
+producto, precio, pedido, pago, envío, retraso, entrega, postventa, devolución.
+
+### Cómo presentarlo
+
+> "Estos son los mensajes que TODA tienda en línea necesita. Ya escritos con tu
+> tono, tu producto, tu canal. Después los copias y los pegas en tu WhatsApp
+> Business o en tu correo automático."
+
+### Campos que pide (ayuda al alumno con estos)
+
+- **Tono**: cercano-amable / profesional-claro / juvenil-divertido /
+  experto-confiable. **Tip:** que elijan el que más se parezca a cómo hablan en
+  sus stories.
+- **Canal de ventas**: WhatsApp, Instagram, Shopify, etc. (cambia el tono y la
+  longitud).
+- **Tipo de envío**: paquetería nacional, mensajería local, digital. (cambia
+  los mensajes de envío y retraso).
+
+### Diferencia clave con "Logística clara"
+
+- **Mensajes de tienda** = 10 mensajes para todo el ciclo de venta y postventa.
+- **Logística clara** = enfocado solo en comunicación de envío (entrega,
+  guía, retraso, daño, devolución).
+
+Si el alumno va a mandar el kit completo por WhatsApp, usa Mensajes. Si va a
+revisar específicamente cómo comunicar el envío, usa Logística clara.
+
+---
+
+## Herramienta 5 · Logística clara
+
+**URL:** `/logistica` · **Tiempo:** 10 min · **Tab:** Operación de la tienda
+
+### Qué es
+
+Variante especializada de Mensajes. Pide datos de logística específicos
+(preparación, costo de envío, paqueterías, política de daños) y genera 5
+mensajes logísticos + ejemplos "débil vs claro".
+
+### El check-list de errores
+
+> "Aquí van a ver una lista de errores logísticos. **Marca los que sí cometes
+> actualmente** — no los que quieres corregir. La IA va a tomar eso para
+> hacerte mensajes que prevengan precisamente esos errores."
+
+### Lo que entrega
+
+5 mensajes:
+
+1. Respuesta a pregunta de entrega.
+2. Confirmación de pedido.
+3. Aviso de envío o entrega.
+4. Comunicación de retraso.
+5. Protocolo de daño o problema.
+
+Cada mensaje viene en versión "débil" vs "clara" para que el alumno vea el
+contraste.
+
+---
+
+## Herramienta 6 · Peso volumétrico
+
+**URL:** `/peso-volumetrico` · **Tiempo:** 10-15 min · **Tab:** Operación
+
+### Qué es
+
+Calculadora interactiva: dimensiones de caja + peso real → peso volumétrico,
+peso cobrable, riesgo de cobro inflado, costo estimado.
+
+### Cómo presentarlo (demo en vivo)
+
+> "Activen el preset **Caja grande ligera**. Miren: el peso real es 0.8 kg pero
+> el peso cobrable es 6 kg. **Están pagando 7 veces más por aire**. Ahora pulsen
+> 'Generar sugerencia compacta' y vean cuánto bajaría si reducen la caja
+> un 10%."
+
+### Conceptos que explicar al inicio
+
+- **Peso real**: lo que pesa en báscula.
+- **Peso volumétrico**: (L × A × H) ÷ factor.
+- **Factor**: divisor que define la paquetería. 5000 = terrestre nacional
+  (Estafeta, FedEx terrestre). 6000 = aéreo o internacional (DHL Express).
+  4000 = más estricto.
+- **Peso cobrable**: el mayor de los dos.
+
+### Lo que vas a ver
+
+Cada alumno tiene su simulador. El riesgo se etiqueta visualmente:
+
+- 🟢 Bajo: peso real domina.
+- 🟡 Medio: volumétrico gana por poco.
+- 🔴 Alto: volumétrico es 5× o más que el real. **Está pagando aire en
+  serio**.
+
+---
+
+## Herramienta 7 · LogiMatch
+
+**URL:** `/logimatch` · **Tiempo:** 30-35 min · **Tab:** Dinámica en clase
+
+### Qué es
+
+**La estrella del módulo de logística.** Subasta de paqueterías por mesa. Hay
+dos tabs:
+
+1. **Catálogo de fichas**: 6 paqueterías (Estafeta, FedEx, DHL, 99 Minutos,
+   Uber Direct, Cadete Local) + 6 perfiles de MiPyME (Pastelería, Joyería,
+   Ropa, Electrónicos, Cosmética, Alimentos). Cada uno con todos sus datos
+   técnicos.
+2. **Simulador de subasta**: el alumno selecciona su mesa (1-15), elige una
+   MiPyME, asigna una paquetería y obtiene un score de match (0-100%) con
+   feedback.
+
+### Cómo correrlo (dinámica de mesa)
+
+> "Cada mesa va a recibir un perfil de MiPyME diferente — yo les digo cuál.
+> Su tarea: en 10 minutos, leen las fichas de paqueterías y deciden cuál
+> usarían y por qué. Después le dicen al sistema su elección. Si sacan más de
+> 80%, ¡pueden descargar evidencia de su match perfecto!"
+
+### Asignación sugerida de mesas
+
+| Mesa | MiPyME | Match perfecto |
+|---|---|---|
+| 1-3 | Pastelería "Dulce Agua" | Uber Direct o Cadete Local (100%) |
+| 4-6 | Joyería "Luz de Plata" | FedEx o DHL (100%) |
+| 7-9 | Ropa "Oficina + Casual" | Estafeta (100%) |
+| 10-12 | Electrónicos "Gadgetzac" | 99 Minutos o FedEx (100%) |
+| 13-14 | Cosmética "Agave Bello" | Estafeta o 99 Minutos (95%) |
+| 15 | Alimentos "Despensa Seca" | Estafeta (100%) |
+
+### El veredicto trampa
+
+**Pastelería + FedEx/DHL/Estafeta = 20% Match con alerta de fracaso**:
+
+> "🚨 ¡Fracaso total! El pastel pasó 3 días en tránsito terrestre, se derritió
+> y llegó destruido."
+
+Es el caso pedagógico más fuerte. **Provoca a una mesa** a probar la
+combinación incorrecta para que vean la alerta.
+
+### La evidencia descargable
+
+Al pulsar "💾 Guardar evidencia de subasta" descarga un `.txt` con:
+
+- Número de mesa.
+- MiPyME evaluada.
+- Paquetería asignada.
+- Score y feedback.
+- Fecha y hora.
+
+**Las mesas suben este `.txt` al LMS** como entregable. Tú abres el archivo y
+ves el match en 5 segundos.
+
+### Errores típicos en clase
+
+- Mesa elige Cadete Local para electrónicos pensando en "cuidado del paquete":
+  saca 40% porque Cadete solo cubre Aguascalientes y el 60% del catálogo es
+  CDMX/GDL/MTY. Buen punto para discutir cobertura > cuidado.
+- Mesa elige FedEx para ropa de margen bajo: saca 45% porque premium come el
+  margen. Buen punto para discutir costo > velocidad.
+
+---
+
+## Herramienta 8 · LogiCoach
+
+**URL:** `/logicoach` · **Tiempo:** 25-30 min · **Tab:** Diagnóstico operativo
+
+### Qué es
+
+Wizard de 12 preguntas dividido en 4 pasos (3 preguntas cada uno). Audita el
+plan logístico personal del alumno y genera:
+
+- **Score de madurez (0-100)**.
+- **Nivel**: Inicial (<40), En Desarrollo (40-69), Optimizado (70+).
+- **Hasta 3 alertas críticas** con keyword matching.
+- **Formato Markdown listo para LMS**.
+
+### Cómo presentarlo
+
+> "Esta es la herramienta de cierre. Voy a darles 25 minutos para responder
+> 12 preguntas sobre cómo opera su tienda hoy. **Sean honestos** — el sistema
+> detecta respuestas vagas y baja la calificación. Cuando terminen, pulsan
+> 'Copiar formato' y pegan en el LMS lo que les sale."
+
+### Las 12 preguntas
+
+**Paso 1 · Canales y registro**
+
+1. ¿Por dónde recibo pedidos?
+2. ¿Dónde los registro?
+3. ¿Qué datos pido siempre antes de aceptar un pedido?
+
+**Paso 2 · Transacciones y stock**
+
+4. ¿Cómo confirmo el pago antes de procesar?
+5. ¿Cómo controlo el inventario?
+6. ¿Quién prepara el pedido físicamente?
+
+**Paso 3 · Empaque y logística de envío**
+
+7. ¿Qué checklist o revisión uso antes de cerrar el paquete?
+8. ¿Cuál es mi opción principal de envío?
+9. ¿Cuál es mi opción alternativa?
+
+**Paso 4 · Promesas y control**
+
+10. ¿Cuál es el tiempo de preparación que prometo?
+11. ¿Qué haré si hay retraso o problema?
+12. ¿Qué indicador mediré cada semana?
+
+### Las píldoras de respuesta rápida
+
+Cada pregunta tiene 3-4 píldoras con respuestas comunes (WhatsApp, Excel,
+FedEx, "A ojo", etc.). El alumno puede pulsar y la respuesta se inyecta en el
+textarea. **Acelera muchísimo el llenado.**
+
+### Las 3 alertas que dispara el sistema
+
+1. **⚠️ Riesgo de cuello de botella** — si en Q1/Q2 detecta "WhatsApp",
+   "Instagram" o "Libreta".
+2. **🚨 Peligro de quiebre de stock** — si en Q5 detecta "A ojo", "Memoria"
+   o "No controlo".
+3. **⚠️ Vulnerabilidad en distribución** — si Q8 y Q9 mencionan la misma
+   paquetería o Q9 está vacío.
+
+### Cómo se calcula el score
+
+El motor mide **presencia de conceptos clave** (no solo longitud):
+
+- Q1 espera: canal + diferenciación principal/alterno.
+- Q5 espera: herramienta + frecuencia. Penaliza "a ojo".
+- Q10 espera: número de horas/días. Penaliza "rápido" sin tiempo.
+
+Si un alumno pega lorem ipsum largo → 30 puntos (no 100). El scoring
+distingue calidad de contenido.
+
+### El botón crítico de evaluación masiva
+
+**"📋 Copiar formato de entrega estándar"** copia al portapapeles un Markdown
+con:
+
+- Score y nivel.
+- Alertas activas.
+- Las 12 preguntas con sus respuestas.
+
+**Los 80 alumnos pegan EXACTAMENTE el mismo formato** en el LMS. Tú abres y
+revisas en bloque sin tener que descifrar formatos personales.
+
+### Cómo calificar
+
+Sugerencia de rúbrica rápida:
+
+- **Score 70+ con 0 alertas**: 10/10. Plan operativo sólido.
+- **Score 70+ con alertas**: 9/10. Plan profundo pero con áreas críticas.
+- **Score 40-69**: 7-8/10. Bases pero falta detalle.
+- **Score <40**: 5-6/10. Falta llenar o respuestas vagas. Pide reentrega.
+
+---
+
+## Modo demostración vs IA en vivo
+
+Las 4 herramientas con IA muestran un badge:
+
+- 🟢 **IA en vivo**: OpenAI respondió. Análisis personalizado.
+- 🟡 **Modo demostración**: la app usó su mock local. Sigue siendo útil
+  pedagógicamente pero menos específico.
+
+**Si proyectas para clase y ves badge amber:** revisa que `OPENAI_API_KEY`
+esté configurada en Vercel y que el modelo definido en `OPENAI_MODEL` exista.
+
+---
+
+## Errores comunes que vas a ver y cómo manejarlos
+
+### "No me llegó el correo del resumen"
+
+1. Verifica que el alumno haya escrito bien su correo.
+2. Verifica que `RESEND_API_KEY` esté en Vercel.
+3. Que el dominio `updates.ceoslogica.com` esté verificado en Resend.
+
+### "Mi tablero LogiBingo se ve diferente al de mi compañero"
+
+Es **a propósito**: cada alumno recibe un orden aleatorio (Fisher-Yates).
+Evita que copien.
+
+### "El modal de anécdota ya no se abre"
+
+Solo abre en líneas **nuevas**. Si el alumno ya envió anécdota por una línea,
+necesita completar otra línea distinta para que vuelva a abrir.
+
+### "Mi LogiMatch dice 20% pero yo elegí bien"
+
+Es la dinámica: hay matches buenos (>80%), aceptables (50-79%) y trampa
+(<50%). Si saca 20%, **es lección, no error técnico**. Discútelo en mesa.
+
+---
+
+## Tarea de cierre sugerida
+
+> "Cada quien entrega tres cosas al LMS:
+>
+> 1. La evidencia `.txt` de LogiMatch (mejor combinación que encontraron).
+> 2. El Markdown de LogiCoach con su plan personal.
+> 3. Una reflexión de 200 palabras: ¿cuál de las 3 alertas de LogiCoach me
+>    salió y qué voy a hacer en los próximos 30 días para resolverla?"
+
+Eso te da 3 entregables comparables por alumno × 80 alumnos = 240 documentos
+que abres y calificas con los criterios de arriba.
+
+---
+
+## Lo que falta y podría agregarse
+
+- Dashboard del profesor con todas las entregas centralizadas (hoy llegan por
+  correo).
+- Persistencia en base de datos (hoy es localStorage del navegador).
+- Modo "kiosco" para proyección en aula.
+
+Si necesitas alguna de estas, abre un issue en el repo o pídeselo a tu
+desarrollador de cabecera.
