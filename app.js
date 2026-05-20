@@ -170,9 +170,9 @@ const TOOL_GROUPS = [
     tools: [
       {
         id: "logibingo",
-        kicker: "Rompehielos",
+        kicker: "🎴 Loteria del e-commerce",
         title: "LogiBingo",
-        description: "Bingo de horrores logisticos con anecdotas anonimas al profesor.",
+        description: "Loteria mexicana de horrores logisticos vividos como cliente. Anecdotas anonimas al profesor.",
       },
       {
         id: "logimatch",
@@ -2094,30 +2094,31 @@ function renderLogiBingoTool() {
   renderToolShell(`
     <section class="screen panel-enter logibingo-shell">
       <article class="surface-card logibingo-intro">
-        <p class="eyebrow">Dinamica grupal</p>
-        <h2>LogiBingo: el bingo de los horrores logisticos</h2>
+        <p class="eyebrow">Loteria mexicana del e-commerce</p>
+        <h2>LogiBingo: la loteria de los horrores logisticos</h2>
         <p class="text-muted">
-          Marca cada error que ya viviste vendiendo en linea. Cada vez que completes una linea de cuatro
-          (fila, columna o diagonal) abriremos un espacio para que cuentes tu peor anecdota.
+          Como en la loteria, marca cada carta que ya te toco vivir <strong>como cliente</strong>
+          comprando en linea. Cuando junte cuatro en linea (fila, columna o diagonal), gritas
+          ¡loteria! y cuentas tu peor anecdota como comprador.
         </p>
         ${renderHowToPlay({
           steps: [
-            "Marca solo los errores que <strong>ya viviste</strong> vendiendo en linea. Se sincero, nadie te juzga.",
-            "Cada linea de 4 (fila, columna o diagonal) abre un espacio para que cuentes tu peor anecdota.",
-            "Tu anecdota llega <strong>anonima</strong> al profesor para discutirla en clase.",
+            "Marca cada error que te han hecho <strong>a ti como cliente</strong> comprando en tiendas en linea. No es un examen, es memoria colectiva.",
+            "Cuando juntes <strong>4 en linea</strong> (fila, columna o diagonal) abrimos un espacio para que cuentes tu peor experiencia como comprador.",
+            "Tu anecdota llega <strong>anonima</strong> al profesor y se usa para discutir con el grupo que NO repetir cuando tu seas el que vende.",
           ],
         })}
         <div class="logibingo-metrics" role="status" aria-live="polite">
           <div class="logibingo-metric">
-            <span class="logibingo-metric-label">Errores marcados</span>
+            <span class="logibingo-metric-label">Cartas marcadas</span>
             <strong>${selectedCount} / 16</strong>
           </div>
           <div class="logibingo-metric">
-            <span class="logibingo-metric-label">Lineas completadas</span>
+            <span class="logibingo-metric-label">Lineas cantadas</span>
             <strong>${linesCount}</strong>
           </div>
           <div class="logibingo-metric">
-            <span class="logibingo-metric-label">Peligro operativo</span>
+            <span class="logibingo-metric-label">Indice de horrores</span>
             <strong>${dangerPercent}%</strong>
           </div>
           <div class="logibingo-metric">
@@ -2126,7 +2127,7 @@ function renderLogiBingoTool() {
           </div>
         </div>
         <div class="logibingo-controls">
-          <button type="button" class="ghost-button" data-action="logibingo-reset">Reiniciar tablero</button>
+          <button type="button" class="ghost-button" data-action="logibingo-reset">Cantar otra ronda</button>
         </div>
       </article>
 
@@ -2158,7 +2159,7 @@ function renderLogiBingoTool() {
 
       <article class="surface-card logibingo-thermometer" data-tone="${dangerLevel.key}">
         <header class="logibingo-thermometer-header">
-          <p class="eyebrow">🔥 Tu termometro de peligro logistico</p>
+          <p class="eyebrow">🎴 Tu indice de horrores presenciados</p>
           <h3>${escapeHtml(dangerLevel.label)}</h3>
           <p class="text-muted">${escapeHtml(dangerLevel.detail)}</p>
         </header>
@@ -2174,9 +2175,9 @@ function renderLogiBingoTool() {
           <span class="logibingo-thermometer-fill" style="width: ${dangerPercent}%"></span>
         </div>
         <div class="logibingo-thermometer-scale" aria-hidden="true">
-          <span data-active="${dangerLevel.key === "green"}">0-3 errores</span>
-          <span data-active="${dangerLevel.key === "amber"}">4-8 errores</span>
-          <span data-active="${dangerLevel.key === "red"}">9+ errores</span>
+          <span data-active="${dangerLevel.key === "green"}">0-3 cartas</span>
+          <span data-active="${dangerLevel.key === "amber"}">4-8 cartas</span>
+          <span data-active="${dangerLevel.key === "red"}">9+ cartas</span>
         </div>
       </article>
 
@@ -2185,8 +2186,8 @@ function renderLogiBingoTool() {
           ? `
             <article class="surface-card logibingo-history">
               <header>
-                <p class="eyebrow">Mis anecdotas enviadas</p>
-                <h3>${anecdoteHistory.length} contribucion${anecdoteHistory.length === 1 ? "" : "es"} a la discusion del grupo</h3>
+                <p class="eyebrow">Mis cartas cantadas</p>
+                <h3>${anecdoteHistory.length} anecdota${anecdoteHistory.length === 1 ? "" : "s"} enviada${anecdoteHistory.length === 1 ? "" : "s"} al grupo</h3>
               </header>
               <ul class="logibingo-history-list">
                 ${anecdoteHistory
@@ -2213,8 +2214,8 @@ function renderLogiBingoTool() {
               <div class="logibingo-modal-content">
                 <header class="logibingo-modal-header">
                   <div>
-                    <p class="logibingo-modal-eyebrow">🎉 ¡Linea completada! ¡Ya lo vivi!</p>
-                    <h3 id="logibingo-modal-title">${escapeHtml(triggerLabel || "Comparte tu peor anecdota")}</h3>
+                    <p class="logibingo-modal-eyebrow">🎴 ¡Loteria! Te toco esta carta:</p>
+                    <h3 id="logibingo-modal-title">${escapeHtml(triggerLabel || "Cuenta tu peor compra en linea")}</h3>
                   </div>
                   <button
                     type="button"
@@ -2224,8 +2225,8 @@ function renderLogiBingoTool() {
                   >×</button>
                 </header>
                 <p class="text-muted">
-                  Tu anecdota llega <strong>anonima</strong> al profesor para que se discuta en clase.
-                  Nadie en el salon vera tu nombre ni tu correo.
+                  Cuentanos, <strong>desde tu lugar como cliente</strong>, cuando viviste este error en una tienda en linea.
+                  La anecdota llega <strong>anonima</strong> al profesor; nadie del salon vera tu nombre.
                 </p>
                 <label class="logibingo-anecdote-field">
                   <span class="visually-hidden">Anecdota anonima</span>
@@ -2234,7 +2235,7 @@ function renderLogiBingoTool() {
                     data-input="logibingo-anecdote"
                     rows="5"
                     maxlength="${anecdoteMax}"
-                    placeholder="Ej: Vendi un producto que estaba agotado y me toco escribirle al cliente para cancelar..."
+                    placeholder="Ej: Pedi unos audifonos por Instagram, me los cobraron en el momento y a la semana me cancelaron porque no tenian stock..."
                   >${escapeHtml(bingo.anecdote)}</textarea>
                 </label>
                 <p class="logibingo-anecdote-counter">${bingo.anecdote.length} / ${anecdoteMax}</p>
@@ -3427,7 +3428,7 @@ function resetLogiBingo() {
   state.logibingo = resetBingoBoard();
   persistState();
   render();
-  showToast("Tablero reiniciado con un orden nuevo.");
+  showToast("Nueva ronda lista. Las cartas se barajaron de nuevo.");
 }
 
 async function sendLogiBingoAnecdote() {

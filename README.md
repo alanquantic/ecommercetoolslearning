@@ -41,7 +41,7 @@ Esto:
 - Genera mensajes operativos para tienda en linea: bienvenida, producto, precio, pedido, pago, envio, retraso, entrega, postventa y cambios/devoluciones.
 - Genera mensajes de logistica clara para tiempos de entrega, confirmacion de pedido, avisos, retrasos y problemas.
 - Simula peso volumetrico, peso cobrable y costo estimado por kg con cajas estandar.
-- Ofrece LogiBingo: tablero 4x4 con 16 errores logisticos comunes, conteo de lineas, termometro de peligro y desahogo anonimo.
+- Ofrece LogiBingo: loteria mexicana de los horrores logisticos vividos como cliente, con tablero 4x4, conteo de lineas, indice de horrores y envio anonimo de anecdotas al profesor.
 - Activa LogiMatch: catalogo de 6 paqueterias y 6 MiPyMEs, simulador de subasta por mesa (1-15), medidor circular animado, veredicto desde la matriz de la consultoria y descarga de evidencia .txt.
 - Despliega LogiCoach: wizard de 4 pasos con 12 preguntas, pildoras de respuesta rapida, score 0-100, alertas condicionales (canales manuales, inventario empirico, monopolio de envios) y copia de formato Markdown para LMS.
 - Permite describir producto, cliente, mercado y etapa del negocio.

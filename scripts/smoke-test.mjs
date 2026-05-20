@@ -177,31 +177,31 @@ try {
   await expectVisible(page.getByText("$570 MXN estimados"));
   await page.screenshot({ path: path.join(outputDir, "peso-volumetrico.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /Rompehielos\s+LogiBingo/ }).click();
+  await page.getByRole("button", { name: /Loteria del e-commerce\s+LogiBingo/ }).click();
   if (!page.url().endsWith("/logibingo")) {
     throw new Error(`LogiBingo deberia vivir en /logibingo. URL actual: ${page.url()}`);
   }
   await expectVisible(page.getByRole("heading", { name: /LogiBingo/ }));
-  await expectVisible(page.getByText(/Termometro de peligro/i));
+  await expectVisible(page.getByText(/Tu indice de horrores/i));
   const cells = page.locator(".logibingo-cell");
   await page.waitForFunction(() => document.querySelectorAll(".logibingo-cell").length === 16);
   for (let index = 0; index < 4; index += 1) {
     await cells.nth(index).click();
   }
-  await expectVisible(page.getByText(/Linea completada/i));
+  await expectVisible(page.getByText(/¡Loteria! Te toco esta carta/i));
   await page.locator('[data-input="logibingo-anecdote"]').fill(
     "Vendi un producto que estaba agotado y me toco escribirle al cliente para cancelar."
   );
   await page.getByRole("button", { name: /Enviar anecdota anonima/i }).click();
-  await expectVisible(page.getByText(/Mis anecdotas enviadas/i));
+  await expectVisible(page.getByText(/Mis cartas cantadas/i));
   await expectVisible(page.getByText(/Vendi un producto que estaba agotado/));
-  await expectVisible(page.getByText(/Coordinador de Crisis|Operador Junior/));
+  await expectVisible(page.getByText(/Has vivido los clasicos|Cliente afortunado/));
   // Mark 5 more cells without completing a new line: row 0 already done, this sequence leaves
   // every other row/column/diagonal one cell short.
   for (const idx of [4, 5, 6, 9, 10]) {
     await cells.nth(idx).click();
   }
-  await expectVisible(page.getByText(/Iman de Perdidas Operativas|Imán de Pérdidas Operativas/));
+  await expectVisible(page.getByText(/Coleccionista de horrores/i));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
 
   await page.getByRole("button", { name: /Subasta por mesa\s+LogiMatch/ }).click();

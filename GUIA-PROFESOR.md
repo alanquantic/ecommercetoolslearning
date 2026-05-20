@@ -44,54 +44,61 @@ ve un badge amber. **Útil para clase**, pero los correos no llegan.
 
 ---
 
-## Herramienta 1 · LogiBingo
+## Herramienta 1 · LogiBingo · "Lotería del e-commerce"
 
 **URL:** `/logibingo` · **Tiempo:** 12-15 min · **Tab:** Dinámica en clase
 
 ### Qué es
 
-Tablero 4×4 con 16 errores logísticos clásicos. Cada celda es un error. El
-alumno marca los que ya cometió vendiendo. Cada vez que completa una línea
-(fila, columna o diagonal) se abre un modal pidiendo que cuente, **de forma
-anónima**, su peor experiencia con ese error. La anécdota llega a tu correo.
+Tablero 4×4 con 16 horrores logísticos clásicos. **Funciona como lotería
+mexicana**: el alumno marca cada carta que **ya le tocó vivir como cliente**
+comprando en tiendas en línea. Cuando completa una línea (fila, columna o
+diagonal) se abre un modal pidiendo que cuente, **de forma anónima**, esa
+experiencia. La anécdota llega a tu correo.
+
+> El enfoque es **como cliente**, no como vendedor. Es más fácil para los
+> alumnos (todos han comprado online, no todos han vendido), genera más
+> material y quita el peso de auto-juzgarse.
 
 ### Cómo presentarlo (script sugerido)
 
-> "Vamos a empezar con algo importante: TODOS hemos metido la pata en e-commerce.
-> Abre la herramienta LogiBingo. Vas a ver 16 errores comunes. **Marca solo los
-> que tú ya hiciste alguna vez** — no juzgues, sé honesto. Cuando completes una
-> línea, el sistema te va a pedir que cuentes tu peor experiencia con uno de
-> esos errores. **Es anónimo**, nadie verá tu nombre. Yo recibo todas las
-> anécdotas para discutirlas al final de la clase."
+> "Vamos a empezar con algo divertido. Esto es una lotería — como la mexicana,
+> pero de **horrores de e-commerce**. Abren LogiBingo. Verán 16 cartas con
+> errores comunes. **Marquen cada carta que YA les tocó vivir como cliente**
+> comprando online. No es examen, es memoria colectiva. Cuando junten 4 en
+> línea, **gritan ¡lotería!** y cuentan esa peor experiencia. Llega anónima a
+> mí, sin nombre. Vamos a leer las más jugosas al final."
 
 ### Lo que vas a ver tú
 
 - En tu bandeja de entrada (Resend → tu correo): un email por cada anécdota
-  enviada. Asunto: `LogiBingo · anecdota anonima: [error]`.
-- Cada correo trae el error que disparó la línea, cuántos errores marcó el
-  alumno (de 16) y el nivel de peligro (verde/ámbar/rojo).
+  enviada. Asunto: `LogiBingo · carta cantada: [error]`.
+- Cada correo trae la carta que se cantó, cuántas marcó el alumno (de 16) y
+  su índice de horrores (verde/ámbar/rojo).
 
 ### Qué hacer al final de la clase
 
-Lee en voz alta 3-4 anécdotas que te parezcan más jugosas. Si los alumnos
-firmaron con detalles que los identifiquen, **pide consentimiento** antes de
-leerlas. Genera conversación: "¿A alguien más le ha pasado?".
+Lee en voz alta 3-4 anécdotas que te parezcan más jugosas. Pregunta:
+**"¿Cuando te pase a ti como vendedor, qué vas a hacer distinto?"**. Ahí
+está la conexión pedagógica clave — pasar de cliente sufrido a vendedor
+consciente.
 
-### Errores típicos que verás
+### Cartas que más se marcan típicamente
 
-- "Vender producto agotado" suele ser el más marcado.
-- "Inventario solo en la cabeza" → señal de que necesitan Kardex.
-- "Cliente molesto sin respuesta" → tema para abrir discusión sobre tiempo de
-  respuesta.
+- "Vender producto agotado" — clásico: el cliente paga y le cancelan.
+- "Promesa 'te llega rápido' sin fecha" — viral en redes.
+- "Cliente molesto sin respuesta" — el silencio post-venta.
+- "No compartir guía al cliente" — la guía existe pero nunca llegó.
 
-### Tu termómetro de peligro (lo que ven los alumnos)
+### Índice de horrores presenciados (lo que ven los alumnos)
 
-- 🟢 0-3 errores: Operador Junior Prudente.
-- 🟡 4-8 errores: Coordinador de Crisis Logísticas.
-- 🔴 9+ errores: Imán de Pérdidas Operativas.
+- 🟢 0-3 cartas: **Cliente afortunado** — pocos sustos en su historial.
+- 🟡 4-8 cartas: **Has vivido los clásicos del e-commerce** — sabes lo que NO repetir.
+- 🔴 9+ cartas: **Coleccionista de horrores logísticos** — el alumno con más
+  contexto del salón.
 
-> Tip: muestra en pantalla un alumno con tablero en rojo y pregunta:
-> "¿Cuáles son los 3 errores que primero atacarías?".
+> Tip: pide a un alumno con tablero rojo que cuente en voz alta. Tiene más
+> historias que el resto y le da naturalidad a la dinámica.
 
 ---
 
