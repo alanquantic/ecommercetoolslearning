@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Bienvenida · Ruta E-commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  >
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --ink: #152033;
+      --muted: #5b667a;
+      --border: rgba(15, 23, 42, 0.08);
+      --indigo: #4f46e5;
+      --indigo-soft: rgba(79, 70, 229, 0.1);
+      --indigo-deep: #3730a3;
+      --amber: #d97706;
+      --amber-soft: rgba(245, 158, 11, 0.14);
+      --emerald: #047857;
+      --emerald-soft: rgba(16, 185, 129, 0.14);
+      --red: #b91c1c;
+      --red-soft: rgba(220, 38, 38, 0.12);
+      --violet: #7c3aed;
+      --violet-soft: rgba(124, 58, 237, 0.12);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Instrument Sans", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, transparent 40%),
+        linear-gradient(160deg, #ffffff 0%, var(--bg) 60%, #f1eefe 100%);
+      overflow: hidden;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 40px 56px 84px;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 40px 56px 84px;
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+      animation: slide-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide-eyebrow {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--indigo);
+      margin: 0;
+    }
+
+    .slide-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+      line-height: 1.1;
+      margin: 0;
+    }
+
+    .slide-lead {
+      font-size: clamp(1rem, 1.4vw, 1.15rem);
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0;
+      max-width: 780px;
+    }
+
+    .slide-body {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.8fr);
+      gap: 28px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .slide-mockup {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .slide-side {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .student-points,
+    .teacher-note {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .student-points h3,
+    .teacher-note h3 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--indigo);
+    }
+
+    .teacher-note h3 {
+      color: var(--violet);
+    }
+
+    .student-points ol {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.96rem;
+      line-height: 1.5;
+    }
+
+    .student-points li strong {
+      color: var(--ink);
+    }
+
+    .teacher-note p {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .teacher-note p strong {
+      color: var(--ink);
+    }
+
+    .annotation {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-width: 160px;
+      pointer-events: none;
+    }
+
+    .annotation-pill {
+      font-family: "Space Grotesk", sans-serif;
+      background: #fef3c7;
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      align-self: flex-start;
+      box-shadow: 0 4px 10px rgba(217, 119, 6, 0.18);
+    }
+
+    .annotation-text {
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.92);
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    /* deck controls */
+    .deck-nav {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    .deck-nav button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      font-size: 1.2rem;
+      color: var(--indigo);
+      font-family: inherit;
+      transition: background-color 180ms ease;
+    }
+
+    .deck-nav button:hover,
+    .deck-nav button:focus-visible {
+      outline: none;
+      background: var(--indigo-soft);
+    }
+
+    .deck-nav button[disabled] {
+      color: rgba(79, 70, 229, 0.3);
+      cursor: not-allowed;
+    }
+
+    .deck-counter {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .deck-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: var(--indigo);
+      transition: width 280ms ease;
+      z-index: 30;
+    }
+
+    /* Cover slide — solo extiende layout; el display lo controla .slide/.slide.active */
+    .slide.cover {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .cover-eyebrow {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--indigo);
+    }
+
+    .cover-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      line-height: 1.05;
+      margin: 0;
+      max-width: 800px;
+    }
+
+    .cover-lead {
+      font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0;
+      max-width: 640px;
+    }
+
+    .cover-deck-info {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .cover-deck-info span {
+      background: var(--indigo-soft);
+      color: var(--indigo-deep);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    /* mockup specific */
+    .ui-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .ui-tab {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.78rem;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: var(--indigo-deep);
+      font-weight: 600;
+    }
+
+    .ui-tab.is-active {
+      background: var(--indigo);
+      color: #fff;
+    }
+
+    .ui-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ui-pill {
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 0.74rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+
+    .ui-pill.is-emerald {
+      background: var(--emerald-soft);
+      color: var(--emerald);
+    }
+
+    .ui-pill.is-red {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .ui-pill.is-violet {
+      background: var(--violet-soft);
+      color: var(--violet);
+    }
+
+    .ui-input {
+      height: 32px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      color: #94a3b8;
+      font-size: 0.86rem;
+      border: 1px solid var(--border);
+    }
+
+    .ui-button {
+      display: inline-flex;
+      background: var(--indigo);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+
+    .ui-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ui-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .bingo-cell {
+      height: 56px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      font-size: 0.72rem;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .bingo-cell.is-on {
+      background: #d97706;
+      color: #fff;
+      border-color: #b45309;
+      box-shadow: 0 8px 16px rgba(180, 83, 9, 0.3);
+    }
+
+    .thermo-bar {
+      height: 14px;
+      background: rgba(15, 23, 42, 0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .thermo-fill {
+      height: 100%;
+      width: 65%;
+      background: linear-gradient(90deg, #dc2626, #b91c1c);
+      border-radius: 999px;
+    }
+
+    .gauge {
+      width: 110px;
+      height: 110px;
+      position: relative;
+      flex: 0 0 110px;
+    }
+
+    .gauge-track,
+    .gauge-prog {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+    }
+
+    .gauge-track {
+      border: 12px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .gauge-prog {
+      border: 12px solid transparent;
+      border-top-color: #10b981;
+      border-right-color: #10b981;
+      transform: rotate(45deg);
+    }
+
+    .gauge-label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .wizard-progress {
+      display: flex;
+      gap: 4px;
+    }
+
+    .wizard-step {
+      height: 8px;
+      flex: 1;
+      background: rgba(79, 70, 229, 0.16);
+      border-radius: 999px;
+    }
+
+    .wizard-step.is-on {
+      background: var(--indigo);
+    }
+
+    .tag-chip {
+      background: var(--violet-soft);
+      color: var(--violet);
+      font-size: 0.74rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      border: 1px solid rgba(124, 58, 237, 0.32);
+    }
+
+    @media (max-width: 900px) {
+      .deck {
+        padding: 20px 16px 76px;
+      }
+      .slide {
+        inset: 16px 16px 76px;
+      }
+      .slide-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+      }
+    }
+
+    @media print {
+      body {
+        overflow: visible;
+      }
+      .deck-nav,
+      .deck-progress {
+        display: none !important;
+      }
+      .deck {
+        height: auto;
+      }
+      .slide {
+        position: relative;
+        display: flex !important;
+        inset: auto;
+        page-break-after: always;
+        padding: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-progress" id="deck-progress" style="width: 10%"></div>
+
+  <main class="deck" id="deck">
+    <!-- 0 · Portada -->
+    <section class="slide active cover" data-index="0">
+      <p class="cover-eyebrow">Bienvenidos</p>
+      <h1 class="cover-title">Ruta E-commerce</h1>
+      <p class="cover-lead">
+        8 herramientas para decidir, operar y diagnosticar tu tienda en linea.
+        En las siguientes pantallas vas a ver para que sirve cada una y como se usa.
+      </p>
+      <div class="cover-deck-info">
+        <span>3 horas de sesion</span>
+        <span>8 herramientas</span>
+        <span>Trabajo individual + mesas</span>
+      </div>
+    </section>
+
+    <!-- 1 · Diagnostico de ruta -->
+    <section class="slide" data-index="1">
+      <p class="slide-eyebrow">Herramienta 1 · Antes de operar</p>
+      <h2 class="slide-title">🧭 Diagnostico de ruta</h2>
+      <p class="slide-lead">
+        Responde 5 preguntas sobre tu producto y proyecto. La IA te dice si te conviene
+        tienda propia, marketplace o modelo hibrido, con argumentos.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <span class="ui-pill is-emerald">IA en vivo</span>
+          <div class="ui-card">
+            <strong style="font-family: 'Space Grotesk', sans-serif;">Tienda propia</strong>
+            <span style="font-size: 0.85rem; color: var(--muted);">
+              Tu producto es de marca propia y tu cliente compra por identidad.
+            </span>
+          </div>
+          <div class="ui-card">
+            <strong style="font-size: 0.86rem;">Afinidad</strong>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <div style="flex: 1; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                <div style="width: 82%; height: 100%; background: var(--indigo);"></div>
+              </div>
+              <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700;">82%</span>
+            </div>
+          </div>
+          <span class="ui-button">Recibir resumen por correo</span>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">A</span>
+            <span class="annotation-text">Tu recomendacion personalizada.</span>
+          </div>
+          <div class="annotation" style="bottom: 80px; right: 24px;">
+            <span class="annotation-pill">B</span>
+            <span class="annotation-text">Te llega por correo. Llena tu email.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Pon tu <strong>nombre, proyecto y correo</strong>.</li>
+              <li>Describe brevemente que vendes.</li>
+              <li>Contesta las 5 preguntas con honestidad.</li>
+              <li>Revisa tu correo para guardar el resumen.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Esta no es de logistica, es <strong>estrategica</strong>. La usas una vez para decidir el modelo.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 2 · Ficha de producto -->
+    <section class="slide" data-index="2">
+      <p class="slide-eyebrow">Herramienta 2 · Operacion</p>
+      <h2 class="slide-title">📋 Ficha de producto</h2>
+      <p class="slide-lead">
+        Describe tu producto y la IA genera un wireframe: hero, fotos, beneficios, FAQs.
+        Sale como guia descargable para que disenes tu pagina.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <span class="ui-pill is-emerald">IA en vivo</span>
+          <div class="ui-card" style="background: linear-gradient(135deg, #eef2ff, #fff);">
+            <strong style="font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem;">Hero principal</strong>
+            <span style="font-size: 0.84rem; color: var(--muted);">Producto + propuesta clara + CTA visible.</span>
+          </div>
+          <div class="ui-row">
+            <div class="ui-card" style="flex: 1;">
+              <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">Foto 1</span>
+              <span style="font-size: 0.82rem;">Producto en uso</span>
+            </div>
+            <div class="ui-card" style="flex: 1;">
+              <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">Foto 2</span>
+              <span style="font-size: 0.82rem;">Detalle textura</span>
+            </div>
+            <div class="ui-card" style="flex: 1;">
+              <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">Foto 3</span>
+              <span style="font-size: 0.82rem;">Escala / tamano</span>
+            </div>
+          </div>
+          <div class="ui-card">
+            <strong style="font-size: 0.86rem;">Beneficios clave</strong>
+            <span style="font-size: 0.82rem; color: var(--muted);">3 razones para comprar hoy</span>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">!</span>
+            <span class="annotation-text">Disena tu pagina copiando esta estructura.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Describe tu producto en <strong>una frase clara</strong>.</li>
+              <li>Indica cliente, precio referencia y diferenciador.</li>
+              <li>Descarga el .txt con tu guia.</li>
+              <li>Usalo como brief para tu disenador.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Mientras mas <strong>especifica</strong> sea tu descripcion (producto + cliente + ciudad), mas util sale el wireframe.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 3 · Mensajes de tienda -->
+    <section class="slide" data-index="3">
+      <p class="slide-eyebrow">Herramienta 3 · Operacion</p>
+      <h2 class="slide-title">💬 Mensajes de tienda</h2>
+      <p class="slide-lead">
+        Genera 10 mensajes operativos listos para copiar a WhatsApp o correo:
+        bienvenida, producto, precio, pago, envio, retraso, postventa.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <div class="ui-row">
+            <span class="ui-pill is-emerald">IA en vivo</span>
+            <span class="ui-pill" style="background: var(--indigo-soft); color: var(--indigo-deep); border: 1px solid rgba(79, 70, 229, 0.3);">Tono: cercano-amable</span>
+          </div>
+          <div class="ui-card">
+            <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">01 · Bienvenida</span>
+            <span style="font-size: 0.86rem;">Hola {nombre} ✨ gracias por escribirnos...</span>
+          </div>
+          <div class="ui-card">
+            <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">04 · Confirmacion de pago</span>
+            <span style="font-size: 0.86rem;">¡Pago recibido! Tu pedido {numero}...</span>
+          </div>
+          <div class="ui-card">
+            <span style="font-size: 0.74rem; color: var(--muted); text-transform: uppercase;">07 · Aviso de envio</span>
+            <span style="font-size: 0.86rem;">Tu paquete salio hoy con guia {guia}...</span>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">?</span>
+            <span class="annotation-text">Cada campo del formulario tiene un boton "?" con ayuda.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Llena los <strong>12 campos</strong> con datos reales de tu tienda.</li>
+              <li>Si no entiendes un campo, toca el "?" al lado.</li>
+              <li>Recibes 10 mensajes para copiar y pegar.</li>
+              <li>Tambien te llegan por correo.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Si quieres mensajes <strong>especificos de envio</strong> (retrasos, danos), abre la herramienta de al lado: <strong>Logistica clara</strong>.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 4 · Logistica clara -->
+    <section class="slide" data-index="4">
+      <p class="slide-eyebrow">Herramienta 4 · Operacion</p>
+      <h2 class="slide-title">🚚 Logistica clara</h2>
+      <p class="slide-lead">
+        Variante especializada en envios. Te da 5 mensajes en version "debil vs clara"
+        para entrega, confirmacion, retraso, dano y devolucion.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <span class="ui-pill is-emerald">IA en vivo</span>
+          <div class="ui-card">
+            <span style="font-size: 0.74rem; color: var(--red); text-transform: uppercase; font-weight: 700;">❌ Mensaje debil</span>
+            <span style="font-size: 0.86rem; color: var(--muted);">"Ya casi te llega tu pedido"</span>
+          </div>
+          <div class="ui-card" style="border-color: rgba(16, 185, 129, 0.32); background: rgba(16, 185, 129, 0.04);">
+            <span style="font-size: 0.74rem; color: var(--emerald); text-transform: uppercase; font-weight: 700;">✓ Mensaje claro</span>
+            <span style="font-size: 0.86rem;">"Tu pedido {numero} sale hoy con FedEx terrestre. Llega entre el {fecha-1} y {fecha-2}. Guia: {guia}."</span>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">★</span>
+            <span class="annotation-text">Compara siempre las dos versiones: aprendes que cambia.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Describe tu paqueteria, cobertura y tiempo de preparacion.</li>
+              <li>En la lista de errores, marca <strong>solo los que SI cometes</strong> hoy.</li>
+              <li>Recibes 5 mensajes con version debil vs clara.</li>
+              <li>Copia la version clara a tus respuestas automaticas.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>El truco no es prometer rapido: es <strong>prometer claro</strong>. Esos mensajes te ahorran reclamos.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 5 · Peso volumetrico -->
+    <section class="slide" data-index="5">
+      <p class="slide-eyebrow">Herramienta 5 · Operacion</p>
+      <h2 class="slide-title">📦 Peso volumetrico</h2>
+      <p class="slide-lead">
+        Calculadora interactiva. Te muestra si estas pagando "aire" por usar una caja
+        muy grande. Indispensable para optimizar costo de envio.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <div class="ui-row">
+            <div class="ui-card" style="flex: 1;">
+              <span style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Peso real</span>
+              <strong style="font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem;">0.8 kg</strong>
+            </div>
+            <div class="ui-card" style="flex: 1; background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.3);">
+              <span style="font-size: 0.72rem; color: var(--red); text-transform: uppercase;">Peso cobrable</span>
+              <strong style="font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem;">6 kg</strong>
+            </div>
+          </div>
+          <span class="ui-pill is-red">🚨 Riesgo alto: estas pagando aire</span>
+          <div class="ui-card">
+            <strong style="font-size: 0.86rem;">Sugerencia compacta</strong>
+            <span style="font-size: 0.82rem; color: var(--muted);">Reduciendo dimensiones 10%, bajas a 4.4 kg cobrables (-27%).</span>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">?</span>
+            <span class="annotation-text">El "factor" 5000/6000/4000 tiene un boton "?" que lo explica.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Elige un preset de caja (o pon tus dimensiones).</li>
+              <li>Pon tu peso real y la tarifa por kg.</li>
+              <li>Ve cuanto te cobran de mas por el "aire".</li>
+              <li>Aplica la sugerencia compacta y compara.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Demo en vivo recomendada: activa el preset <strong>"Caja grande ligera"</strong> y muestra como el cobro se multiplica por 7.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 6 · LogiBingo -->
+    <section class="slide" data-index="6">
+      <p class="slide-eyebrow">Herramienta 6 · Dinamica en clase</p>
+      <h2 class="slide-title">🎯 LogiBingo</h2>
+      <p class="slide-lead">
+        Tablero 4×4 con 16 errores logisticos clasicos. Marca los que <strong>ya cometiste</strong>.
+        Cada linea de 4 abre un espacio para contar tu peor anecdota — <strong>anonima</strong>.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup" style="gap: 14px;">
+          <div class="bingo-grid">
+            <span class="bingo-cell is-on">Producto agotado</span>
+            <span class="bingo-cell is-on">Codigo postal</span>
+            <span class="bingo-cell is-on">Tallas confundidas</span>
+            <span class="bingo-cell is-on">Sin bascula</span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell">Promesa vaga</span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell">Sin guia</span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+            <span class="bingo-cell"></span>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <strong style="font-size: 0.88rem;">🔥 Termometro de peligro</strong>
+              <span class="ui-pill is-red" style="text-transform: none;">Iman de perdidas</span>
+            </div>
+            <div class="thermo-bar"><div class="thermo-fill"></div></div>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">★</span>
+            <span class="annotation-text">Toca una linea de 4 → modal pide tu anecdota anonima.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Marca <strong>solo errores que YA cometiste</strong>.</li>
+              <li>Cuando completes 4 en fila/columna/diagonal, escribe tu anecdota.</li>
+              <li>Se envia <strong>anonima</strong> al profesor.</li>
+              <li>Cada nueva linea reabre el modal.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Las anecdotas anonimas llegan a tu correo. Lee 3-4 en voz alta al cierre para abrir discusion.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 7 · LogiMatch -->
+    <section class="slide" data-index="7">
+      <p class="slide-eyebrow">Herramienta 7 · Dinamica en clase</p>
+      <h2 class="slide-title">🔨 LogiMatch · subasta de paqueterias</h2>
+      <p class="slide-lead">
+        Tu mesa recibe una MiPyME y debe asignarle la mejor paqueteria. El algoritmo
+        evalua el match (0-100%) y genera evidencia descargable para entregar.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <div class="ui-tabs">
+            <span class="ui-tab">📇 Catalogo de fichas</span>
+            <span class="ui-tab is-active">🔨 Simulador de subasta</span>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div class="gauge">
+              <div class="gauge-track"></div>
+              <div class="gauge-prog"></div>
+              <div class="gauge-label">100%</div>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+              <span class="ui-pill is-emerald" style="text-transform: none;">Mesa 7 · Pasteleria + Uber Direct</span>
+              <span style="font-size: 0.84rem; color: var(--muted);">¡Excelente decision! El pastel se mantiene frio, se maneja con cuidado manual y se entrega en menos de una hora.</span>
+              <span class="ui-button">💾 Guardar evidencia</span>
+            </div>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">📥</span>
+            <span class="annotation-text">El boton descarga un .txt con tu mesa, match y veredicto. Es tu entregable.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces en mesa</h3>
+            <ol>
+              <li>Selecciona <strong>tu numero de mesa</strong> (1-15).</li>
+              <li>Activa la MiPyME que les toco.</li>
+              <li>Lee las fichas de las 6 paqueterias.</li>
+              <li>Asignen una y descarguen la evidencia.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>Hay matches trampa: Pasteleria + FedEx = <strong>20%</strong>. Provocalo para que vean el feedback de fracaso.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 8 · LogiCoach -->
+    <section class="slide" data-index="8">
+      <p class="slide-eyebrow">Herramienta 8 · Diagnostico operativo</p>
+      <h2 class="slide-title">🩺 LogiCoach · auditoria final</h2>
+      <p class="slide-lead">
+        Wizard de 4 pasos con 12 preguntas. Audita tu plan logistico, te da un score
+        0-100 con nivel, alertas criticas y un formato listo para pegar en el LMS.
+      </p>
+      <div class="slide-body">
+        <div class="slide-mockup">
+          <div class="wizard-progress">
+            <span class="wizard-step is-on"></span>
+            <span class="wizard-step is-on"></span>
+            <span class="wizard-step is-on"></span>
+            <span class="wizard-step"></span>
+          </div>
+          <span style="font-size: 0.84rem; color: var(--muted);">Paso 3 de 4 · Empaque y logistica</span>
+          <div class="ui-card">
+            <strong style="font-size: 0.92rem;">¿Cual es mi opcion principal de envio?</strong>
+            <div class="ui-input">FedEx terrestre para envios nacionales urgentes.</div>
+            <div class="ui-row">
+              <span class="tag-chip">FedEx</span>
+              <span class="tag-chip">DHL</span>
+              <span class="tag-chip">Estafeta</span>
+              <span class="tag-chip">99 Minutos</span>
+            </div>
+          </div>
+          <div class="ui-card" style="background: rgba(220, 38, 38, 0.06); border-color: rgba(220, 38, 38, 0.32);">
+            <span style="font-size: 0.74rem; color: var(--red); text-transform: uppercase; font-weight: 700;">🚨 Alerta</span>
+            <span style="font-size: 0.84rem;">Peligro de quiebre de stock: detectamos "a ojo" en tu inventario.</span>
+          </div>
+          <div class="annotation" style="top: 24px; right: 24px;">
+            <span class="annotation-pill">📋</span>
+            <span class="annotation-text">El boton "Copiar formato" entrega un Markdown listo para tu LMS.</span>
+          </div>
+        </div>
+        <aside class="slide-side">
+          <div class="student-points">
+            <h3>Que haces tu</h3>
+            <ol>
+              <li>Avanza por los 4 pasos respondiendo con <strong>honestidad</strong>.</li>
+              <li>Si no sabes que poner, toca las <strong>pildoras</strong> que ya traen respuestas comunes.</li>
+              <li>Pulsa "Generar diagnostico" al final.</li>
+              <li>Copia el formato y pegalo en tu entrega del LMS.</li>
+            </ol>
+          </div>
+          <div class="teacher-note">
+            <h3>Nota del profesor</h3>
+            <p>El motor detecta lorem ipsum y respuestas vagas. Si pones cosas como <strong>"a ojo"</strong>, el sistema lo señala como alerta.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 9 · Cierre -->
+    <section class="slide cover" data-index="9">
+      <p class="cover-eyebrow">A trabajar</p>
+      <h1 class="cover-title">¿Comenzamos?</h1>
+      <p class="cover-lead">
+        Abran <strong>ecommercetoolslearning.vercel.app</strong> en su laptop o celular.
+        La primera herramienta de la sesion: <strong>LogiBingo</strong> (rompehielos).
+      </p>
+      <div class="cover-deck-info">
+        <span>🎯 LogiBingo · 15 min</span>
+        <span>🔨 LogiMatch · 35 min en mesa</span>
+        <span>🩺 LogiCoach · 30 min individual</span>
+      </div>
+    </section>
+  </main>
+
+  <nav class="deck-nav" aria-label="Navegacion de slides">
+    <button type="button" data-action="prev" aria-label="Anterior">←</button>
+    <span class="deck-counter" id="deck-counter">1 / 10</span>
+    <button type="button" data-action="next" aria-label="Siguiente">→</button>
+  </nav>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const total = slides.length;
+      const counter = document.getElementById("deck-counter");
+      const progress = document.getElementById("deck-progress");
+      const prevButton = document.querySelector('[data-action="prev"]');
+      const nextButton = document.querySelector('[data-action="next"]');
+
+      let currentIndex = 0;
+
+      function goTo(index) {
+        const next = Math.max(0, Math.min(total - 1, index));
+        slides[currentIndex].classList.remove("active");
+        slides[next].classList.add("active");
+        currentIndex = next;
+        counter.textContent = `${next + 1} / ${total}`;
+        progress.style.width = `${((next + 1) / total) * 100}%`;
+        prevButton.disabled = next === 0;
+        nextButton.disabled = next === total - 1;
+      }
+
+      prevButton.addEventListener("click", () => goTo(currentIndex - 1));
+      nextButton.addEventListener("click", () => goTo(currentIndex + 1));
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === " ") {
+          event.preventDefault();
+          goTo(currentIndex + 1);
+        } else if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          goTo(currentIndex - 1);
+        } else if (event.key === "Home") {
+          goTo(0);
+        } else if (event.key === "End") {
+          goTo(total - 1);
+        }
+      });
+
+      goTo(0);
+    })();
+  </script>
+</body>
+</html>
