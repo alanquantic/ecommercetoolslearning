@@ -30,6 +30,10 @@
     {
       "source": "/logimatch",
       "destination": "/index.html"
+    },
+    {
+      "source": "/logicoach",
+      "destination": "/index.html"
     }
   ]
 }

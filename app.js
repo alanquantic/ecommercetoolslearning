@@ -89,6 +89,18 @@ import {
   getTableOptionsForMatch,
   normalizeLogiMatchState,
 } from "./lib/logimatch.js";
+import {
+  buildLogiCoachMarkdown,
+  createDefaultLogiCoachState,
+  evaluateLogiCoach,
+  getAnsweredCount as getLogiCoachAnsweredCount,
+  getLogiCoachSteps,
+  getMissingQuestionsInStep,
+  getStepProgress as getLogiCoachStepProgress,
+  getTotalQuestions as getLogiCoachTotalQuestions,
+  getTotalSteps as getLogiCoachTotalSteps,
+  normalizeLogiCoachState,
+} from "./lib/logicoach.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
@@ -100,6 +112,7 @@ const VALID_TOOLS = new Set([
   "volumetric",
   "logibingo",
   "logimatch",
+  "logicoach",
 ]);
 const TOOL_ROUTES = {
   diagnosis: "/diagnostico",
@@ -109,6 +122,7 @@ const TOOL_ROUTES = {
   volumetric: "/peso-volumetrico",
   logibingo: "/logibingo",
   logimatch: "/logimatch",
+  logicoach: "/logicoach",
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
@@ -402,6 +416,7 @@ const defaultState = {
   logichallenged: createDefaultLogiChallengedState(),
   logibingo: createDefaultLogiBingoState(),
   logimatch: createDefaultLogiMatchState(),
+  logicoach: createDefaultLogiCoachState(),
 };
 
 let state = loadState();
@@ -449,6 +464,7 @@ function loadState() {
       logichallenged: normalizeLogiChallengedState(parsed.logichallenged),
       logibingo: normalizeLogiBingoState(parsed.logibingo),
       logimatch: normalizeLogiMatchState(parsed.logimatch),
+      logicoach: normalizeLogiCoachState(parsed.logicoach),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -663,6 +679,19 @@ function buildToolSwitcherMarkup() {
         <strong>LogiMatch</strong>
         <span>Subasta de paqueterias por mesa con veredicto y evidencia.</span>
       </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="logicoach"
+        data-route="${TOOL_ROUTES.logicoach}"
+        data-active="${state.activeTool === "logicoach"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 8</span>
+        <strong>LogiCoach</strong>
+        <span>Wizard de 12 preguntas con auditoria automatica y entrega lista para LMS.</span>
+      </button>
     </nav>
   `;
 }
@@ -716,6 +745,11 @@ function render() {
 
   if (state.activeTool === "logimatch") {
     renderLogiMatchTool();
+    return;
+  }
+
+  if (state.activeTool === "logicoach") {
+    renderLogiCoachTool();
     return;
   }
 
@@ -2651,6 +2685,232 @@ function renderLogiMatchEmptyResult() {
   `;
 }
 
+function renderLogiCoachTool() {
+  const coach = state.logicoach;
+  if (coach.stage === "result" && coach.evaluation) {
+    renderLogiCoachResult();
+    return;
+  }
+  renderLogiCoachWizard();
+}
+
+function renderLogiCoachWizard() {
+  const coach = state.logicoach;
+  const steps = getLogiCoachSteps();
+  const totalSteps = getLogiCoachTotalSteps();
+  const totalQuestions = getLogiCoachTotalQuestions();
+  const answeredTotal = getLogiCoachAnsweredCount(coach.answers);
+  const currentStep = Math.min(coach.currentStep, totalSteps - 1);
+  const step = steps[currentStep];
+  const overallPercent = Math.round((answeredTotal / totalQuestions) * 100);
+  const stepDots = steps
+    .map(
+      (item, index) => `
+        <li class="logicoach-step-dot" data-state="${getStepDotState(index, currentStep, coach.answers)}">
+          <span class="logicoach-step-dot-index">${index + 1}</span>
+          <span class="logicoach-step-dot-label">${escapeHtml(item.title)}</span>
+        </li>
+      `,
+    )
+    .join("");
+  const questions = step.questions.map((question) => renderLogiCoachQuestion(question, coach.answers)).join("");
+  const isLastStep = currentStep === totalSteps - 1;
+  const missingInStep = getMissingQuestionsInStep(coach.answers, currentStep);
+
+  renderToolShell(`
+    <section class="screen panel-enter logicoach-shell">
+      <article class="surface-card logicoach-intro">
+        <p class="eyebrow">Diagnostico operativo</p>
+        <h2>LogiCoach: diagnostica tu plan logistico</h2>
+        <p class="text-muted">
+          Avanza por 4 pasos, 3 preguntas cada uno. Las pildoras debajo de cada pregunta agilizan el llenado.
+          Al final generamos auditoria, alertas y un formato listo para pegar en el LMS.
+        </p>
+        <div class="logicoach-progress" role="progressbar" aria-valuenow="${overallPercent}" aria-valuemin="0" aria-valuemax="100">
+          <div class="logicoach-progress-bar" style="width: ${overallPercent}%"></div>
+        </div>
+        <p class="logicoach-progress-label">${answeredTotal} de ${totalQuestions} preguntas con respuesta · Paso ${currentStep + 1} de ${totalSteps}</p>
+        <ol class="logicoach-step-dots" aria-label="Pasos del wizard">${stepDots}</ol>
+      </article>
+
+      <article class="surface-card logicoach-step">
+        <header class="logicoach-step-header">
+          <p class="logicoach-step-eyebrow">Paso ${currentStep + 1} · ${escapeHtml(step.title)}</p>
+          <h3>${escapeHtml(step.description)}</h3>
+        </header>
+        <form id="logicoach-form" class="logicoach-form" novalidate>
+          ${questions}
+        </form>
+        ${
+          missingInStep.length > 0
+            ? `<p class="logicoach-step-warning">Faltan ${missingInStep.length} preguntas en este paso. Aun asi puedes avanzar y volver despues.</p>`
+            : ""
+        }
+        <footer class="logicoach-step-footer">
+          <button
+            type="button"
+            class="ghost-button"
+            data-action="logicoach-prev"
+            ${currentStep === 0 ? "disabled" : ""}
+          >Paso anterior</button>
+          ${
+            isLastStep
+              ? '<button type="button" class="primary-button" data-action="logicoach-generate">Generar diagnostico</button>'
+              : '<button type="button" class="primary-button" data-action="logicoach-next">Siguiente paso</button>'
+          }
+        </footer>
+      </article>
+    </section>
+  `);
+
+  scrollLogiCoachStepIntoView();
+}
+
+function renderLogiCoachQuestion(question, answers) {
+  const value = answers[question.id] || "";
+  const tags = question.tags
+    .map(
+      (tag) => `
+        <button
+          type="button"
+          class="logicoach-tag"
+          data-action="logicoach-tag"
+          data-question="${escapeHtml(question.id)}"
+          data-tag="${escapeHtml(tag)}"
+        >${escapeHtml(tag)}</button>
+      `,
+    )
+    .join("");
+
+  return `
+    <div class="logicoach-question">
+      <label class="logicoach-question-label" for="logicoach-${escapeHtml(question.id)}">
+        <strong>${escapeHtml(question.label)}</strong>
+        <span class="logicoach-question-helper">${escapeHtml(question.helper)}</span>
+      </label>
+      <textarea
+        id="logicoach-${escapeHtml(question.id)}"
+        class="logicoach-textarea"
+        data-input="logicoach-answer"
+        data-question="${escapeHtml(question.id)}"
+        rows="3"
+        maxlength="800"
+        placeholder="${escapeHtml(question.placeholder)}"
+      >${escapeHtml(value)}</textarea>
+      <div class="logicoach-tags" role="group" aria-label="Sugerencias rapidas">${tags}</div>
+    </div>
+  `;
+}
+
+function getStepDotState(index, currentStep, answers) {
+  const stepProgress = getLogiCoachStepProgress(answers, index);
+  if (index < currentStep && stepProgress >= 100) {
+    return "complete";
+  }
+  if (index === currentStep) {
+    return "current";
+  }
+  if (stepProgress > 0) {
+    return "started";
+  }
+  return "pending";
+}
+
+function scrollLogiCoachStepIntoView() {
+  window.requestAnimationFrame(() => {
+    const target = appRoot.querySelector(".logicoach-step");
+    if (!target) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function renderLogiCoachResult() {
+  const coach = state.logicoach;
+  const evaluation = coach.evaluation;
+  const steps = getLogiCoachSteps();
+  const planSections = steps
+    .map((step) => {
+      const items = step.questions
+        .map(
+          (question) => `
+            <article class="logicoach-plan-item">
+              <h4>${escapeHtml(question.label)}</h4>
+              <p>${escapeHtml((coach.answers[question.id] || "").trim() || "(sin respuesta)")}</p>
+            </article>
+          `,
+        )
+        .join("");
+      return `
+        <section class="logicoach-plan-section">
+          <header>
+            <p class="logicoach-plan-eyebrow">${escapeHtml(step.title)}</p>
+            <h3>${escapeHtml(step.description)}</h3>
+          </header>
+          ${items}
+        </section>
+      `;
+    })
+    .join("");
+
+  const alerts =
+    evaluation.alerts.length === 0
+      ? '<p class="logicoach-no-alerts">Sin alertas criticas detectadas. Mantente igual de explicito en el siguiente trimestre.</p>'
+      : evaluation.alerts
+          .map(
+            (alert) => `
+              <article class="logicoach-alert" data-tone="${escapeHtml(alert.tone)}">
+                <span class="logicoach-alert-icon" aria-hidden="true">${alert.icon}</span>
+                <div>
+                  <h4>${escapeHtml(alert.title)}</h4>
+                  <p>${escapeHtml(alert.detail)}</p>
+                </div>
+              </article>
+            `,
+          )
+          .join("");
+
+  renderToolShell(`
+    <section class="screen panel-enter logicoach-shell">
+      <article class="surface-card logicoach-result-card">
+        <header class="logicoach-result-header" data-level="${escapeHtml(evaluation.level.key)}">
+          <div>
+            <p class="eyebrow">Diagnostico final</p>
+            <h2>${escapeHtml(evaluation.level.label)}</h2>
+            <p class="text-muted">${escapeHtml(evaluation.level.detail)}</p>
+          </div>
+          <div class="logicoach-result-score" aria-label="Score de madurez">
+            <strong>${evaluation.score}</strong>
+            <span>de 100</span>
+          </div>
+        </header>
+        <div class="logicoach-result-actions">
+          <button type="button" class="primary-button" data-action="logicoach-copy">📋 Copiar formato de entrega estandar</button>
+          <button type="button" class="ghost-button" data-action="logicoach-edit">Volver a editar respuestas</button>
+          <button type="button" class="ghost-button" data-action="logicoach-reset">Empezar plan nuevo</button>
+        </div>
+      </article>
+
+      <article class="surface-card logicoach-alerts-card">
+        <header>
+          <p class="eyebrow">Recomendaciones de la consultoria</p>
+          <h3>Alertas activas</h3>
+        </header>
+        <div class="logicoach-alerts">${alerts}</div>
+      </article>
+
+      <article class="surface-card logicoach-plan-card">
+        <header>
+          <p class="eyebrow">Plan completo</p>
+          <h3>Tus 12 respuestas</h3>
+        </header>
+        ${planSections}
+      </article>
+    </section>
+  `);
+}
+
 function renderLogisticsTool() {
   const brief = state.logistics.brief;
   const selectedErrors = new Set(brief.currentErrors);
@@ -3216,6 +3476,19 @@ function handleSubmit(event) {
 }
 
 function handleInput(event) {
+  const coachAnswer = event.target.closest('[data-input="logicoach-answer"]');
+  if (coachAnswer && state.activeTool === "logicoach") {
+    const questionId = coachAnswer.dataset.question;
+    if (questionId) {
+      state.logicoach = {
+        ...state.logicoach,
+        answers: { ...state.logicoach.answers, [questionId]: coachAnswer.value.slice(0, 800) },
+      };
+      persistState();
+    }
+    return;
+  }
+
   const matchTable = event.target.closest('[data-input="logimatch-table"]');
   if (matchTable && state.activeTool === "logimatch") {
     state.logimatch = normalizeLogiMatchState({
@@ -3502,6 +3775,108 @@ function downloadLogiMatchEvidence() {
   showToast("Evidencia descargada.");
 }
 
+function applyLogiCoachTag(questionId, tag) {
+  if (!questionId || typeof tag !== "string") {
+    return;
+  }
+  if (!Object.prototype.hasOwnProperty.call(state.logicoach.answers, questionId)) {
+    return;
+  }
+  const existing = state.logicoach.answers[questionId] || "";
+  const trimmed = existing.trim();
+  const candidate = trimmed.length === 0 ? tag : `${trimmed} · ${tag}`;
+  const next = candidate.slice(0, 800);
+  state.logicoach = {
+    ...state.logicoach,
+    answers: { ...state.logicoach.answers, [questionId]: next },
+  };
+  persistState();
+  render();
+  window.requestAnimationFrame(() => {
+    const target = appRoot.querySelector(`[data-input="logicoach-answer"][data-question="${questionId}"]`);
+    if (target && typeof target.focus === "function") {
+      target.focus();
+      const cursor = target.value.length;
+      try {
+        target.setSelectionRange(cursor, cursor);
+      } catch (error) {
+        // setSelectionRange not supported on some browsers; ignore
+      }
+    }
+  });
+}
+
+function goLogiCoachStep(direction) {
+  const total = getLogiCoachTotalSteps();
+  const next = Math.min(Math.max(state.logicoach.currentStep + direction, 0), total - 1);
+  if (next === state.logicoach.currentStep) {
+    return;
+  }
+  state.logicoach = { ...state.logicoach, currentStep: next };
+  persistState();
+  render();
+}
+
+function generateLogiCoachDiagnostic() {
+  const answered = getLogiCoachAnsweredCount(state.logicoach.answers);
+  if (answered === 0) {
+    showToast("Contesta al menos una pregunta antes de generar el diagnostico.");
+    return;
+  }
+  const evaluation = evaluateLogiCoach(state.logicoach.answers);
+  state.logicoach = {
+    ...state.logicoach,
+    stage: "result",
+    evaluation,
+  };
+  persistState();
+  render();
+  showToast(`Diagnostico ${evaluation.level.label} listo.`);
+}
+
+function editLogiCoachAnswers() {
+  state.logicoach = {
+    ...state.logicoach,
+    stage: "wizard",
+  };
+  persistState();
+  render();
+}
+
+function resetLogiCoach() {
+  state.logicoach = createDefaultLogiCoachState();
+  persistState();
+  render();
+  showToast("Plan reiniciado.");
+}
+
+function copyLogiCoachMarkdown() {
+  const evaluation = state.logicoach.evaluation || evaluateLogiCoach(state.logicoach.answers);
+  state.logicoach = { ...state.logicoach, evaluation };
+  const text = buildLogiCoachMarkdown(state.logicoach);
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => showToast("Formato copiado. Pegalo en tu LMS."))
+      .catch(() => downloadLogiCoachMarkdown(text));
+    return;
+  }
+  downloadLogiCoachMarkdown(text);
+}
+
+function downloadLogiCoachMarkdown(text) {
+  const file = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "logicoach-plan.md";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("No se pudo copiar. Se descargo el formato.");
+}
+
 function handleClick(event) {
   const optionButton = event.target.closest("[data-option-type]");
   if (optionButton) {
@@ -3561,6 +3936,27 @@ function handleClick(event) {
       break;
     case "logimatch-download":
       downloadLogiMatchEvidence();
+      break;
+    case "logicoach-tag":
+      applyLogiCoachTag(actionButton.dataset.question, actionButton.dataset.tag);
+      break;
+    case "logicoach-prev":
+      goLogiCoachStep(-1);
+      break;
+    case "logicoach-next":
+      goLogiCoachStep(1);
+      break;
+    case "logicoach-generate":
+      generateLogiCoachDiagnostic();
+      break;
+    case "logicoach-edit":
+      editLogiCoachAnswers();
+      break;
+    case "logicoach-reset":
+      resetLogiCoach();
+      break;
+    case "logicoach-copy":
+      copyLogiCoachMarkdown();
       break;
     case "next-question":
       goNext();

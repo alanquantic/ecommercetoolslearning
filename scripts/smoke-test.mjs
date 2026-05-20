@@ -227,6 +227,38 @@ try {
   await expectVisible(page.getByText(/Fracaso total/));
   await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
 
+  await page.getByRole("button", { name: /^LogiCoach/ }).click();
+  if (!page.url().endsWith("/logicoach")) {
+    throw new Error(`LogiCoach deberia vivir en /logicoach. URL actual: ${page.url()}`);
+  }
+  await expectVisible(page.getByRole("heading", { name: /LogiCoach/ }));
+  await expectVisible(page.getByText(/Paso 1 · Canales y registro/));
+  await page.getByRole("button", { name: "WhatsApp" }).first().click();
+  await page.locator('textarea[data-question="q2"]').fill("Libreta manual donde anoto numero de pedido y nombre del cliente.");
+  await page.locator('textarea[data-question="q3"]').fill("Nombre, telefono, direccion con CP y comprobante de pago.");
+  await page.getByRole("button", { name: /Siguiente paso/ }).click();
+  await expectVisible(page.getByText(/Paso 2 · Transacciones/i));
+  await page.locator('textarea[data-question="q4"]').fill("Reviso transferencia bancaria en la app antes de armar.");
+  await page.locator('textarea[data-question="q5"]').fill("A ojo cuando voy a la bodega, sin sistema formal.");
+  await page.locator('textarea[data-question="q6"]').fill("Yo mismo desde casa por la tarde.");
+  await page.getByRole("button", { name: /Siguiente paso/ }).click();
+  await expectVisible(page.getByText(/Paso 3 · Empaque/i));
+  await page.locator('textarea[data-question="q7"]').fill("Reviso talla, fotografio el contenido y sello con cinta firmada.");
+  await page.locator('textarea[data-question="q8"]').fill("FedEx terrestre como opcion principal nacional.");
+  await page.locator('textarea[data-question="q9"]').fill("FedEx tambien si la primera falla.");
+  await page.getByRole("button", { name: /Siguiente paso/ }).click();
+  await expectVisible(page.getByText(/Paso 4 · Promesas/i));
+  await page.locator('textarea[data-question="q10"]').fill("24 horas habiles desde la confirmacion del pago.");
+  await page.locator('textarea[data-question="q11"]').fill("Aviso al cliente antes de 24h con guia nueva y un detalle de cortesia.");
+  await page.locator('textarea[data-question="q12"]').fill("Porcentaje de pedidos entregados a tiempo y quejas por logistica.");
+  await page.getByRole("button", { name: /Generar diagnostico/ }).click();
+  await expectVisible(page.getByRole("heading", { name: /Diagnostico final|Optimizado|En desarrollo|Inicial/i }));
+  await expectVisible(page.getByText(/Riesgo de cuello de botella/));
+  await expectVisible(page.getByText(/Peligro de quiebre de stock/));
+  await expectVisible(page.getByText(/Vulnerabilidad en distribucion/));
+  await expectVisible(page.getByRole("button", { name: /Copiar formato/ }));
+  await page.screenshot({ path: path.join(outputDir, "logicoach.png"), fullPage: true });
+
   const mobilePage = await browser.newPage({ viewport: { width: 390, height: 1200 }, isMobile: true });
   await mobilePage.goto(`${baseUrl}/logibingo`, { waitUntil: "networkidle" });
   await expectVisible(mobilePage.getByRole("heading", { name: /LogiBingo/ }));
@@ -246,6 +278,15 @@ try {
     throw new Error("La vista movil de LogiMatch tiene overflow horizontal.");
   }
   await mobilePage.screenshot({ path: path.join(outputDir, "logimatch-mobile.png"), fullPage: true });
+  await mobilePage.goto(`${baseUrl}/logicoach`, { waitUntil: "networkidle" });
+  await expectVisible(mobilePage.getByRole("heading", { name: /LogiCoach/ }));
+  const coachOverflow = await mobilePage.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+  );
+  if (coachOverflow) {
+    throw new Error("La vista movil de LogiCoach tiene overflow horizontal.");
+  }
+  await mobilePage.screenshot({ path: path.join(outputDir, "logicoach-mobile.png"), fullPage: true });
   await mobilePage.close();
 
   if (pageErrors.length > 0) {
@@ -341,6 +382,7 @@ function createStaticServer(rootPath) {
         "/peso-volumetrico",
         "/logibingo",
         "/logimatch",
+        "/logicoach",
       ]);
       const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
       const filePath = path.normalize(path.join(rootPath, pathToServe));

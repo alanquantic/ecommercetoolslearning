@@ -3691,6 +3691,413 @@ button {
   }
 }
 
+.logicoach-shell {
+  display: grid;
+  gap: 20px;
+  background: #f8fafc;
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.logicoach-intro {
+  display: grid;
+  gap: 14px;
+}
+
+.logicoach-progress {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.12);
+  overflow: hidden;
+}
+
+.logicoach-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 999px;
+  transition: width 320ms ease;
+}
+
+.logicoach-progress-label {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.logicoach-step-dots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.logicoach-step-dot {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.logicoach-step-dot[data-state="current"] {
+  border-color: #4f46e5;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.18);
+}
+
+.logicoach-step-dot[data-state="complete"] {
+  border-color: rgba(124, 58, 237, 0.5);
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.logicoach-step-dot[data-state="started"] {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.logicoach-step-dot-index {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.12);
+  color: #3730a3;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  margin: 0 auto;
+}
+
+.logicoach-step-dot[data-state="current"] .logicoach-step-dot-index {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.logicoach-step-dot[data-state="complete"] .logicoach-step-dot-index {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.logicoach-step-dot-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.logicoach-step-dot[data-state="current"] .logicoach-step-dot-label,
+.logicoach-step-dot[data-state="complete"] .logicoach-step-dot-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.logicoach-step {
+  display: grid;
+  gap: 16px;
+}
+
+.logicoach-step-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.logicoach-step-header h3 {
+  margin: 4px 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.2rem;
+}
+
+.logicoach-form {
+  display: grid;
+  gap: 18px;
+}
+
+.logicoach-question {
+  display: grid;
+  gap: 8px;
+}
+
+.logicoach-question-label {
+  display: grid;
+  gap: 2px;
+  font-size: 0.96rem;
+  color: var(--text);
+}
+
+.logicoach-question-helper {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.logicoach-textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 92px;
+  background: #fff;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.logicoach-textarea:focus {
+  outline: none;
+  border-color: rgba(79, 70, 229, 0.55);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.16);
+}
+
+.logicoach-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.logicoach-tag {
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  background: rgba(79, 70, 229, 0.08);
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition), transform var(--transition);
+}
+
+.logicoach-tag:hover,
+.logicoach-tag:focus-visible {
+  outline: none;
+  background: #4f46e5;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.logicoach-step-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.logicoach-step-warning {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.24);
+  color: #4c1d95;
+  font-size: 0.88rem;
+}
+
+.logicoach-result-card {
+  display: grid;
+  gap: 18px;
+}
+
+.logicoach-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(124, 58, 237, 0.04));
+  border: 1px solid rgba(79, 70, 229, 0.18);
+}
+
+.logicoach-result-header[data-level="optimized"] {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(124, 58, 237, 0.04));
+  border-color: rgba(16, 185, 129, 0.32);
+}
+
+.logicoach-result-header[data-level="developing"] {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(124, 58, 237, 0.04));
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+.logicoach-result-header[data-level="initial"] {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(124, 58, 237, 0.04));
+  border-color: rgba(220, 38, 38, 0.32);
+}
+
+.logicoach-result-header h2 {
+  margin: 4px 0 6px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.5rem;
+}
+
+.logicoach-result-score {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 14px 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-width: 130px;
+}
+
+.logicoach-result-score strong {
+  display: block;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--text);
+}
+
+.logicoach-result-score span {
+  font-size: 0.84rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logicoach-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.logicoach-alerts-card,
+.logicoach-plan-card {
+  display: grid;
+  gap: 14px;
+}
+
+.logicoach-alerts {
+  display: grid;
+  gap: 10px;
+}
+
+.logicoach-alert {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+}
+
+.logicoach-alert[data-tone="danger"] {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.32);
+}
+
+.logicoach-alert h4 {
+  margin: 0 0 4px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1rem;
+}
+
+.logicoach-alert p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.logicoach-alert-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.logicoach-no-alerts {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #065f46;
+  font-size: 0.92rem;
+}
+
+.logicoach-plan-section {
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.logicoach-plan-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.logicoach-plan-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.logicoach-plan-section header h3 {
+  margin: 4px 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+}
+
+.logicoach-plan-item {
+  background: rgba(79, 70, 229, 0.04);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.logicoach-plan-item h4 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.logicoach-plan-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .logicoach-shell {
+    padding: 12px;
+  }
+
+  .logicoach-step-dots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .logicoach-result-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .logicoach-result-score {
+    width: 100%;
+  }
+}
+
 @media print {
   body::before,
   .hero,
