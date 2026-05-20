@@ -42,6 +42,7 @@ Esto:
 - Genera mensajes de logistica clara para tiempos de entrega, confirmacion de pedido, avisos, retrasos y problemas.
 - Simula peso volumetrico, peso cobrable y costo estimado por kg con cajas estandar.
 - Ofrece LogiBingo: tablero 4x4 con 16 errores logisticos comunes, conteo de lineas, termometro de peligro y desahogo anonimo.
+- Activa LogiMatch: catalogo de 6 paqueterias y 6 MiPyMEs, simulador de subasta por mesa (1-15), medidor circular animado, veredicto desde la matriz de la consultoria y descarga de evidencia .txt.
 - Permite describir producto, cliente, mercado y etapa del negocio.
 - Explica por qué importa cada pregunta.
 - Guarda avance y datos localmente en `localStorage`.
@@ -80,6 +81,7 @@ Rutas publicas:
 - `/logistica`
 - `/peso-volumetrico`
 - `/logibingo`
+- `/logimatch`
 
 Archivos relevantes:
 

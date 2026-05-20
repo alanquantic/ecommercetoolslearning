@@ -77,10 +77,30 @@ import {
   setAnecdote as setBingoAnecdote,
   toggleCell as toggleBingoCell,
 } from "./lib/logibingo.js";
+import {
+  buildEvidenceFilename as buildMatchEvidenceFilename,
+  buildEvidenceReceipt as buildMatchEvidenceReceipt,
+  createDefaultLogiMatchState,
+  evaluateLogiMatch,
+  getCarrierById as getMatchCarrier,
+  getCarriers as getMatchCarriers,
+  getMipymeById as getMatchMipyme,
+  getMipymes as getMatchMipymes,
+  getTableOptionsForMatch,
+  normalizeLogiMatchState,
+} from "./lib/logimatch.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
-const VALID_TOOLS = new Set(["diagnosis", "wireframe", "messages", "logistics", "volumetric", "logibingo"]);
+const VALID_TOOLS = new Set([
+  "diagnosis",
+  "wireframe",
+  "messages",
+  "logistics",
+  "volumetric",
+  "logibingo",
+  "logimatch",
+]);
 const TOOL_ROUTES = {
   diagnosis: "/diagnostico",
   wireframe: "/ficha-producto",
@@ -88,6 +108,7 @@ const TOOL_ROUTES = {
   logistics: "/logistica",
   volumetric: "/peso-volumetrico",
   logibingo: "/logibingo",
+  logimatch: "/logimatch",
 };
 const ROUTE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_ROUTES).map(([tool, route]) => [route, tool]));
 
@@ -380,6 +401,7 @@ const defaultState = {
   volumetric: createDefaultVolumetricState(),
   logichallenged: createDefaultLogiChallengedState(),
   logibingo: createDefaultLogiBingoState(),
+  logimatch: createDefaultLogiMatchState(),
 };
 
 let state = loadState();
@@ -426,6 +448,7 @@ function loadState() {
       volumetric: normalizeVolumetricState(parsed.volumetric),
       logichallenged: normalizeLogiChallengedState(parsed.logichallenged),
       logibingo: normalizeLogiBingoState(parsed.logibingo),
+      logimatch: normalizeLogiMatchState(parsed.logimatch),
       currentQuestionIndex: clampQuestionIndex(parsed.currentQuestionIndex),
     };
   } catch (error) {
@@ -627,6 +650,19 @@ function buildToolSwitcherMarkup() {
         <strong>LogiBingo</strong>
         <span>Bingo de los horrores logisticos para dinamicas en clase.</span>
       </button>
+
+      <button
+        class="tool-tab"
+        type="button"
+        data-action="switch-tool"
+        data-tool="logimatch"
+        data-route="${TOOL_ROUTES.logimatch}"
+        data-active="${state.activeTool === "logimatch"}"
+      >
+        <span class="tool-tab-kicker">Herramienta 7</span>
+        <strong>LogiMatch</strong>
+        <span>Subasta de paqueterias por mesa con veredicto y evidencia.</span>
+      </button>
     </nav>
   `;
 }
@@ -675,6 +711,11 @@ function render() {
 
   if (state.activeTool === "logibingo") {
     renderLogiBingoTool();
+    return;
+  }
+
+  if (state.activeTool === "logimatch") {
+    renderLogiMatchTool();
     return;
   }
 
@@ -2309,6 +2350,307 @@ function renderLogiBingoTool() {
   `);
 }
 
+function renderLogiMatchTool() {
+  const match = state.logimatch;
+  const activeTab = match.activeTab === "auction" ? "auction" : "catalog";
+  const carriers = getMatchCarriers();
+  const mipymes = getMatchMipymes();
+
+  renderToolShell(`
+    <section class="screen panel-enter logimatch-shell">
+      <article class="surface-card logimatch-intro">
+        <p class="eyebrow">Subasta logistica</p>
+        <h2>LogiMatch: la subasta de paqueterias</h2>
+        <p class="text-muted">
+          Trabaja en mesa. Selecciona una MiPyME, asigna una paqueteria y deja que el algoritmo de la consultoria
+          publique el veredicto. Cuando logres el mejor match, descarga la evidencia para tu profesor.
+        </p>
+      </article>
+
+      <nav class="logimatch-tabs" aria-label="Secciones de LogiMatch">
+        <button
+          type="button"
+          class="logimatch-tab"
+          data-action="logimatch-tab"
+          data-tab="catalog"
+          data-active="${activeTab === "catalog"}"
+        >
+          📇 Catalogo de fichas
+        </button>
+        <button
+          type="button"
+          class="logimatch-tab"
+          data-action="logimatch-tab"
+          data-tab="auction"
+          data-active="${activeTab === "auction"}"
+        >
+          🔨 Simulador de subasta
+        </button>
+      </nav>
+
+      ${activeTab === "catalog" ? renderLogiMatchCatalog(carriers, mipymes) : renderLogiMatchAuction(match, carriers, mipymes)}
+    </section>
+  `);
+}
+
+function renderLogiMatchCatalog(carriers, mipymes) {
+  return `
+    <div class="logimatch-catalog-section">
+      <header class="logimatch-section-header">
+        <h3>Paqueterias (Anexo B.1)</h3>
+        <p class="text-muted">Seis perfiles para evaluar en la mesa antes de pujar.</p>
+      </header>
+      <div class="logimatch-carrier-grid">
+        ${carriers.map(renderCarrierCard).join("")}
+      </div>
+    </div>
+
+    <div class="logimatch-catalog-section">
+      <header class="logimatch-section-header">
+        <h3>Perfiles de MiPyME (Anexo B.2)</h3>
+        <p class="text-muted">Cada negocio tiene una urgencia y fragilidad propias.</p>
+      </header>
+      <div class="logimatch-mipyme-grid">
+        ${mipymes.map(renderMipymeCard).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderCarrierCard(carrier) {
+  const badges = carrier.badges
+    .map((badge) => `<span class="logimatch-badge" data-tone="${escapeHtml(badge.tone)}">${escapeHtml(badge.label)}</span>`)
+    .join("");
+  const strengths = carrier.strengths.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  const weaknesses = carrier.weaknesses.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+
+  return `
+    <article class="logimatch-card logimatch-card-carrier" aria-label="Ficha de ${escapeHtml(carrier.name)}">
+      <header class="logimatch-card-header">
+        <p class="logimatch-card-eyebrow">Paqueteria</p>
+        <h4>${escapeHtml(carrier.name)}</h4>
+        <p class="logimatch-card-nickname">${escapeHtml(carrier.nickname)}</p>
+        <div class="logimatch-card-badges">${badges}</div>
+      </header>
+      <dl class="logimatch-card-meta">
+        <div><dt>Cobertura</dt><dd>${escapeHtml(carrier.coverage)}</dd></div>
+        <div><dt>Costo relativo</dt><dd>${escapeHtml(carrier.cost)}</dd></div>
+        <div><dt>Tiempo tipico</dt><dd>${escapeHtml(carrier.time)}</dd></div>
+      </dl>
+      <div class="logimatch-card-columns">
+        <section>
+          <h5>Fortalezas</h5>
+          <ul>${strengths}</ul>
+        </section>
+        <section>
+          <h5>Debilidades</h5>
+          <ul>${weaknesses}</ul>
+        </section>
+      </div>
+      <footer class="logimatch-card-footer">
+        <strong>Ideal para:</strong> ${escapeHtml(carrier.idealFor)}
+      </footer>
+    </article>
+  `;
+}
+
+function renderMipymeCard(mipyme) {
+  return `
+    <article class="logimatch-card logimatch-card-mipyme" aria-label="Ficha de ${escapeHtml(mipyme.name)}">
+      <header class="logimatch-card-header">
+        <p class="logimatch-card-eyebrow">MiPyME</p>
+        <h4>${escapeHtml(mipyme.name)}</h4>
+        <p class="logimatch-card-nickname">${escapeHtml(mipyme.headline)}</p>
+        <div class="logimatch-card-badges">
+          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">Fragilidad: ${escapeHtml(mipyme.fragility.label)}</span>
+          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">Urgencia: ${escapeHtml(mipyme.urgency.label)}</span>
+          <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(mipyme.ticket)}</span>
+        </div>
+      </header>
+      <dl class="logimatch-card-meta">
+        <div><dt>Producto principal</dt><dd>${escapeHtml(mipyme.product)}</dd></div>
+        <div><dt>Destinos</dt><dd>${escapeHtml(mipyme.destinations)}</dd></div>
+        <div><dt>Volumen</dt><dd>${escapeHtml(mipyme.volume)}</dd></div>
+      </dl>
+      <footer class="logimatch-card-footer">
+        <strong>Lo que mas le importa:</strong> ${escapeHtml(mipyme.priority)}
+      </footer>
+    </article>
+  `;
+}
+
+function renderLogiMatchAuction(match, carriers, mipymes) {
+  const tableOptions = getTableOptionsForMatch();
+  const selectedMipyme = mipymes.find((mp) => mp.id === match.selectedMipyme) || mipymes[0];
+  const selectedCarrierId = match.selectedCarrier;
+  const result = match.result;
+  const hasTable = Boolean(match.tableNumber);
+
+  const carouselButtons = mipymes
+    .map(
+      (mipyme) => `
+        <button
+          type="button"
+          class="logimatch-mipyme-pill"
+          data-action="logimatch-select-mipyme"
+          data-mipyme="${escapeHtml(mipyme.id)}"
+          data-active="${match.selectedMipyme === mipyme.id}"
+        >
+          <span class="logimatch-mipyme-pill-name">${escapeHtml(mipyme.name)}</span>
+          <span class="logimatch-mipyme-pill-meta">${escapeHtml(mipyme.headline)}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const carrierGrid = carriers
+    .map(
+      (carrier) => `
+        <article
+          class="logimatch-auction-carrier"
+          data-active="${selectedCarrierId === carrier.id}"
+          aria-label="${escapeHtml(carrier.name)}"
+        >
+          <header>
+            <h4>${escapeHtml(carrier.name)}</h4>
+            <p>${escapeHtml(carrier.nickname)}</p>
+          </header>
+          <ul class="logimatch-auction-carrier-meta">
+            <li><strong>Cobertura:</strong> ${escapeHtml(carrier.coverage)}</li>
+            <li><strong>Tiempo:</strong> ${escapeHtml(carrier.time)}</li>
+            <li><strong>Costo:</strong> ${escapeHtml(carrier.cost)}</li>
+          </ul>
+          <button
+            type="button"
+            class="logimatch-assign-button"
+            data-action="logimatch-evaluate"
+            data-carrier="${escapeHtml(carrier.id)}"
+            ${hasTable ? "" : "disabled"}
+          >
+            ⚡ Asignar y evaluar combinacion
+          </button>
+        </article>
+      `,
+    )
+    .join("");
+
+  return `
+    <ol class="logimatch-steps">
+      <li class="logimatch-step" data-done="${hasTable}">
+        <span class="logimatch-step-index">1</span>
+        <div>
+          <h3>Identifica tu mesa</h3>
+          <p class="text-muted">El numero de mesa aparecera en la evidencia descargable.</p>
+          <label class="logimatch-table-label" for="logimatch-table">Numero de mesa / equipo</label>
+          <select
+            id="logimatch-table"
+            class="logimatch-select"
+            data-input="logimatch-table"
+            aria-required="true"
+          >
+            <option value="">Selecciona...</option>
+            ${tableOptions
+              .map(
+                (value) => `
+                  <option value="${value}" ${match.tableNumber === String(value) ? "selected" : ""}>
+                    Mesa ${value}
+                  </option>
+                `,
+              )
+              .join("")}
+          </select>
+        </div>
+      </li>
+
+      <li class="logimatch-step" data-done="${Boolean(selectedMipyme)}">
+        <span class="logimatch-step-index">2</span>
+        <div>
+          <h3>Elige perfil y paqueteria</h3>
+          <p class="text-muted">Activa una MiPyME y pulsa "Asignar" en la paqueteria que quieras evaluar.</p>
+          <div class="logimatch-carousel" role="listbox" aria-label="Perfiles de MiPyME">${carouselButtons}</div>
+          <article class="logimatch-active-mipyme" aria-live="polite">
+            <header>
+              <h4>${escapeHtml(selectedMipyme.name)}</h4>
+              <span>${escapeHtml(selectedMipyme.headline)}</span>
+            </header>
+            <p class="text-muted"><strong>Prioridad:</strong> ${escapeHtml(selectedMipyme.priority)}</p>
+            <div class="logimatch-card-badges">
+              <span class="logimatch-badge" data-tone="${escapeHtml(selectedMipyme.fragility.tone)}">Fragilidad: ${escapeHtml(selectedMipyme.fragility.label)}</span>
+              <span class="logimatch-badge" data-tone="${escapeHtml(selectedMipyme.urgency.tone)}">Urgencia: ${escapeHtml(selectedMipyme.urgency.label)}</span>
+              <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(selectedMipyme.ticket)}</span>
+            </div>
+          </article>
+          <div class="logimatch-auction-grid">${carrierGrid}</div>
+          ${
+            hasTable
+              ? ""
+              : '<p class="logimatch-warning">Selecciona primero tu numero de mesa para habilitar las evaluaciones.</p>'
+          }
+        </div>
+      </li>
+
+      <li class="logimatch-step" data-done="${Boolean(result)}">
+        <span class="logimatch-step-index">3</span>
+        <div>
+          <h3>Veredicto y evidencia</h3>
+          <p class="text-muted">El medidor circular y el feedback son la salida oficial de la subasta.</p>
+          ${result ? renderLogiMatchResult(result) : renderLogiMatchEmptyResult()}
+        </div>
+      </li>
+    </ol>
+  `;
+}
+
+function renderLogiMatchResult(result) {
+  const circumference = 2 * Math.PI * 56;
+  const offset = circumference * (1 - Math.max(0, Math.min(100, result.score)) / 100);
+
+  return `
+    <div class="logimatch-result" data-tone="${escapeHtml(result.tone)}">
+      <div class="logimatch-result-meter" aria-hidden="true">
+        <svg viewBox="0 0 140 140" class="logimatch-gauge">
+          <circle class="logimatch-gauge-track" cx="70" cy="70" r="56"></circle>
+          <circle
+            class="logimatch-gauge-progress"
+            cx="70"
+            cy="70"
+            r="56"
+            stroke-dasharray="${circumference.toFixed(2)}"
+            stroke-dashoffset="${offset.toFixed(2)}"
+          ></circle>
+        </svg>
+        <div class="logimatch-gauge-number">
+          <strong>${result.score}%</strong>
+          <span>Match</span>
+        </div>
+      </div>
+      <div class="logimatch-result-content">
+        <p class="logimatch-result-pair">
+          <span><strong>Mesa</strong> ${escapeHtml(result.tableNumber || "N/A")}</span>
+          <span><strong>MiPyME</strong> ${escapeHtml(result.mipymeName)}</span>
+          <span><strong>Paqueteria</strong> ${escapeHtml(result.carrierName)}</span>
+        </p>
+        <p class="logimatch-result-feedback" data-alert="${result.alert}">
+          ${result.alert ? "🚨 " : ""}${escapeHtml(result.feedback)}
+        </p>
+        <div class="logimatch-result-actions">
+          <button type="button" class="primary-button" data-action="logimatch-download">💾 Guardar evidencia de subasta</button>
+          <button type="button" class="ghost-button" data-action="logimatch-reset">Probar otra combinacion</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderLogiMatchEmptyResult() {
+  return `
+    <div class="logimatch-result-empty">
+      <p>Aun no evaluas combinaciones.</p>
+      <p class="text-muted">Cuando pulses "Asignar y evaluar combinacion" mostraremos el medidor circular, el feedback y el boton para descargar la evidencia.</p>
+    </div>
+  `;
+}
+
 function renderLogisticsTool() {
   const brief = state.logistics.brief;
   const selectedErrors = new Set(brief.currentErrors);
@@ -2874,6 +3216,17 @@ function handleSubmit(event) {
 }
 
 function handleInput(event) {
+  const matchTable = event.target.closest('[data-input="logimatch-table"]');
+  if (matchTable && state.activeTool === "logimatch") {
+    state.logimatch = normalizeLogiMatchState({
+      ...state.logimatch,
+      tableNumber: matchTable.value,
+    });
+    persistState();
+    render();
+    return;
+  }
+
   const bingoAnecdote = event.target.closest('[data-input="logibingo-anecdote"]');
   if (bingoAnecdote && state.activeTool === "logibingo") {
     const counter = appRoot.querySelector(".logibingo-anecdote-counter");
@@ -3069,6 +3422,86 @@ function resetLogiBingo() {
   showToast("Tablero reiniciado con un orden nuevo.");
 }
 
+function setLogiMatchTab(tab) {
+  const next = tab === "auction" ? "auction" : "catalog";
+  if (state.logimatch.activeTab === next) {
+    return;
+  }
+  state.logimatch = { ...state.logimatch, activeTab: next };
+  persistState();
+  render();
+}
+
+function selectLogiMatchMipyme(mipymeId) {
+  if (!getMatchMipyme(mipymeId)) {
+    return;
+  }
+  if (state.logimatch.selectedMipyme === mipymeId && !state.logimatch.result) {
+    return;
+  }
+  state.logimatch = {
+    ...state.logimatch,
+    selectedMipyme: mipymeId,
+    selectedCarrier: "",
+    result: null,
+  };
+  persistState();
+  render();
+}
+
+function evaluateLogiMatchCombo(carrierId) {
+  if (!state.logimatch.tableNumber) {
+    showToast("Selecciona primero tu numero de mesa.");
+    return;
+  }
+  const result = evaluateLogiMatch({
+    mipymeId: state.logimatch.selectedMipyme,
+    carrierId,
+    tableNumber: state.logimatch.tableNumber,
+  });
+  if (!result) {
+    showToast("No fue posible evaluar la combinacion.");
+    return;
+  }
+  state.logimatch = {
+    ...state.logimatch,
+    selectedCarrier: carrierId,
+    result,
+  };
+  persistState();
+  render();
+}
+
+function resetLogiMatchResult() {
+  state.logimatch = {
+    ...state.logimatch,
+    selectedCarrier: "",
+    result: null,
+  };
+  persistState();
+  render();
+}
+
+function downloadLogiMatchEvidence() {
+  const result = state.logimatch.result;
+  if (!result) {
+    showToast("Aun no hay evidencia que descargar.");
+    return;
+  }
+  const text = buildMatchEvidenceReceipt(result);
+  const filename = buildMatchEvidenceFilename(result);
+  const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Evidencia descargada.");
+}
+
 function handleClick(event) {
   const optionButton = event.target.closest("[data-option-type]");
   if (optionButton) {
@@ -3113,6 +3546,21 @@ function handleClick(event) {
       break;
     case "logibingo-reset":
       resetLogiBingo();
+      break;
+    case "logimatch-tab":
+      setLogiMatchTab(actionButton.dataset.tab);
+      break;
+    case "logimatch-select-mipyme":
+      selectLogiMatchMipyme(actionButton.dataset.mipyme);
+      break;
+    case "logimatch-evaluate":
+      evaluateLogiMatchCombo(actionButton.dataset.carrier);
+      break;
+    case "logimatch-reset":
+      resetLogiMatchResult();
+      break;
+    case "logimatch-download":
+      downloadLogiMatchEvidence();
       break;
     case "next-question":
       goNext();

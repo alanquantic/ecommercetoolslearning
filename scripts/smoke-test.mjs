@@ -200,6 +200,33 @@ try {
   await expectVisible(page.getByText(/Iman de Perdidas Operativas|Imán de Pérdidas Operativas/));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
 
+  await page.getByRole("button", { name: /^LogiMatch/ }).click();
+  if (!page.url().endsWith("/logimatch")) {
+    throw new Error(`LogiMatch deberia vivir en /logimatch. URL actual: ${page.url()}`);
+  }
+  await expectVisible(page.getByRole("heading", { name: /LogiMatch/ }));
+  await expectVisible(page.getByRole("heading", { name: /Paqueterias/ }));
+  await page.getByRole("button", { name: /Simulador de subasta/ }).click();
+  await expectVisible(page.getByRole("heading", { name: /Identifica tu mesa/ }));
+  await page.locator("#logimatch-table").selectOption("7");
+  await page.getByRole("button", { name: /Pasteleria "Dulce Agua"/ }).click();
+  const uberCard = page.locator(".logimatch-auction-carrier").filter({ hasText: "Uber Direct" });
+  await uberCard.getByRole("button", { name: /Asignar y evaluar/ }).click();
+  await expectVisible(page.getByText("100%", { exact: true }));
+  await expectVisible(page.getByText(/Excelente decision/));
+  const matchDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Guardar evidencia/ }).click();
+  const matchDownload = await matchDownloadPromise;
+  const matchDownloadName = matchDownload.suggestedFilename();
+  if (!matchDownloadName.startsWith("logimatch-mesa-7-bakery-uber")) {
+    throw new Error(`Evidencia con nombre inesperado: ${matchDownloadName}`);
+  }
+  const fedexCard = page.locator(".logimatch-auction-carrier").filter({ hasText: "FedEx" });
+  await fedexCard.getByRole("button", { name: /Asignar y evaluar/ }).click();
+  await expectVisible(page.getByText("20%", { exact: true }));
+  await expectVisible(page.getByText(/Fracaso total/));
+  await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
+
   const mobilePage = await browser.newPage({ viewport: { width: 390, height: 1200 }, isMobile: true });
   await mobilePage.goto(`${baseUrl}/logibingo`, { waitUntil: "networkidle" });
   await expectVisible(mobilePage.getByRole("heading", { name: /LogiBingo/ }));
@@ -210,6 +237,15 @@ try {
     throw new Error("La vista movil de LogiBingo tiene overflow horizontal.");
   }
   await mobilePage.screenshot({ path: path.join(outputDir, "logibingo-mobile.png"), fullPage: true });
+  await mobilePage.goto(`${baseUrl}/logimatch`, { waitUntil: "networkidle" });
+  await expectVisible(mobilePage.getByRole("heading", { name: /LogiMatch/ }));
+  const matchOverflow = await mobilePage.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+  );
+  if (matchOverflow) {
+    throw new Error("La vista movil de LogiMatch tiene overflow horizontal.");
+  }
+  await mobilePage.screenshot({ path: path.join(outputDir, "logimatch-mobile.png"), fullPage: true });
   await mobilePage.close();
 
   if (pageErrors.length > 0) {
@@ -304,6 +340,7 @@ function createStaticServer(rootPath) {
         "/logistica",
         "/peso-volumetrico",
         "/logibingo",
+        "/logimatch",
       ]);
       const pathToServe = routeFallbacks.has(normalizedPath) ? "/index.html" : normalizedPath;
       const filePath = path.normalize(path.join(rootPath, pathToServe));

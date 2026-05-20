@@ -26,6 +26,10 @@
     {
       "source": "/logibingo",
       "destination": "/index.html"
+    },
+    {
+      "source": "/logimatch",
+      "destination": "/index.html"
     }
   ]
 }
