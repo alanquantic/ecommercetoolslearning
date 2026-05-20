@@ -92,7 +92,10 @@ import {
   getStepProgress as getLogiCoachStepProgress,
   getTotalQuestions as getLogiCoachTotalQuestions,
   getTotalSteps as getLogiCoachTotalSteps,
+  isReadyForDiagnostic as isLogiCoachReady,
+  isValidEmail as isLogiCoachEmail,
   normalizeLogiCoachState,
+  requestLogiCoachPlan,
 } from "./lib/logicoach.js";
 
 const STORAGE_KEY = "ecommerce-learning-route-v1";
@@ -2692,9 +2695,35 @@ function renderLogiCoachWizard() {
         <p class="eyebrow">Diagnostico operativo</p>
         <h2>LogiCoach: diagnostica tu plan logistico</h2>
         <p class="text-muted">
-          Avanza por 4 pasos, 3 preguntas cada uno. Las pildoras debajo de cada pregunta agilizan el llenado.
-          Al final generamos auditoria, alertas y un formato listo para pegar en el LMS.
+          Avanza por 4 pasos, 3 preguntas cada uno. Al final, la IA genera un <strong>plan operativo</strong>
+          personalizado a tu negocio y te lo enviamos por correo.
         </p>
+
+        <div class="logicoach-identity">
+          <label class="logicoach-identity-field">
+            <span>Tu correo (recibiras el plan aqui)</span>
+            <input
+              type="email"
+              class="logicoach-input"
+              autocomplete="email"
+              placeholder="tu@correo.com"
+              value="${escapeHtml(coach.studentEmail || "")}"
+              data-input="logicoach-email"
+            >
+          </label>
+          <label class="logicoach-identity-field">
+            <span>¿A que se dedica tu negocio?</span>
+            <input
+              type="text"
+              class="logicoach-input"
+              maxlength="200"
+              placeholder="Ej. Pasteleria artesanal con base en Aguascalientes"
+              value="${escapeHtml(coach.businessActivity || "")}"
+              data-input="logicoach-activity"
+            >
+          </label>
+        </div>
+
         <div class="logicoach-progress" role="progressbar" aria-valuenow="${overallPercent}" aria-valuemin="0" aria-valuemax="100">
           <div class="logicoach-progress-bar" style="width: ${overallPercent}%"></div>
         </div>
@@ -2869,6 +2898,8 @@ function renderLogiCoachResult() {
         <div class="logicoach-alerts">${alerts}</div>
       </article>
 
+      ${renderLogiCoachAIPlan(coach)}
+
       <article class="surface-card logicoach-plan-card">
         <header>
           <p class="eyebrow">Plan completo</p>
@@ -2878,6 +2909,112 @@ function renderLogiCoachResult() {
       </article>
     </section>
   `);
+}
+
+function renderLogiCoachAIPlan(coach) {
+  const planStatus = coach.planStatus || "idle";
+  const deliveryStatus = coach.deliveryStatus || "idle";
+  const plan = coach.plan;
+
+  if (planStatus === "loading") {
+    return `
+      <article class="surface-card logicoach-aiplan-card" data-state="loading">
+        <header>
+          <p class="eyebrow">Plan operativo personalizado</p>
+          <h3>Generando tu plan con IA...</h3>
+          <p class="text-muted">Estamos analizando tus 12 respuestas y tu giro para armar un plan a la medida. Tarda unos segundos.</p>
+        </header>
+        <div class="logicoach-aiplan-loader" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </article>
+    `;
+  }
+
+  if (planStatus === "error" || !plan) {
+    return `
+      <article class="surface-card logicoach-aiplan-card" data-state="error">
+        <header>
+          <p class="eyebrow">Plan operativo personalizado</p>
+          <h3>No pudimos generar el plan con IA</h3>
+          <p class="text-muted">Intenta de nuevo o continua con el formato estandar del LMS.</p>
+        </header>
+        <div class="logicoach-aiplan-actions">
+          <button type="button" class="button button-primary" data-action="logicoach-retry-plan">Reintentar plan</button>
+        </div>
+      </article>
+    `;
+  }
+
+  const weeks = (plan.thirtyDayPlan || [])
+    .map(
+      (week) => `
+        <article class="logicoach-week">
+          <header>
+            <strong>${escapeHtml(week.week)}</strong>
+            <span>${escapeHtml(week.focus)}</span>
+          </header>
+          <ul>${(week.actions || []).map((action) => `<li>${escapeHtml(action)}</li>`).join("")}</ul>
+        </article>
+      `,
+    )
+    .join("");
+
+  const renderList = (items) => (items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+
+  return `
+    <article class="surface-card logicoach-aiplan-card" data-state="ready">
+      <header class="logicoach-aiplan-header">
+        <div>
+          <p class="eyebrow">Plan operativo personalizado</p>
+          <h3>${escapeHtml(plan.headline || "Tu plan logistico personal")}</h3>
+          <p class="text-muted">${escapeHtml(plan.summary || "")}</p>
+        </div>
+        ${renderAiModeBadge(plan.mode)}
+      </header>
+
+      <div class="logicoach-aiplan-grid">
+        <section>
+          <h4>Tus fortalezas</h4>
+          <ul>${renderList(plan.strengths)}</ul>
+        </section>
+        <section>
+          <h4>Tus riesgos</h4>
+          <ul>${renderList(plan.risks)}</ul>
+        </section>
+      </div>
+
+      <section>
+        <h4>Plan de 30 dias</h4>
+        <div class="logicoach-aiplan-weeks">${weeks || '<p class="text-muted">(sin plan generado)</p>'}</div>
+      </section>
+
+      <div class="logicoach-aiplan-grid">
+        <section>
+          <h4>Checklist de esta semana</h4>
+          <ul>${renderList(plan.checklist)}</ul>
+        </section>
+        <section>
+          <h4>Indicadores a medir</h4>
+          <ul>${renderList(plan.metrics)}</ul>
+        </section>
+      </div>
+
+      <footer class="logicoach-aiplan-actions">
+        <button
+          type="button"
+          class="button button-primary"
+          data-action="logicoach-send-plan"
+          ${deliveryStatus === "sending" ? "disabled" : ""}
+        >
+          ${deliveryStatus === "sending" ? "Enviando..." : "📧 Enviar mi plan por correo"}
+        </button>
+        <button type="button" class="button button-ghost" data-action="logicoach-retry-plan">Volver a generar</button>
+        ${deliveryStatus === "sent" ? '<span class="logicoach-aiplan-status" data-tone="ok">✓ Plan enviado a tu correo</span>' : ""}
+        ${deliveryStatus === "error" ? '<span class="logicoach-aiplan-status" data-tone="error">No pudimos enviar el correo. Intenta otra vez.</span>' : ""}
+      </footer>
+    </article>
+  `;
 }
 
 function renderLogisticsTool() {
@@ -3430,6 +3567,20 @@ function handleInput(event) {
     return;
   }
 
+  const coachEmail = event.target.closest('[data-input="logicoach-email"]');
+  if (coachEmail && state.activeTool === "logicoach") {
+    state.logicoach = { ...state.logicoach, studentEmail: coachEmail.value.slice(0, 120) };
+    persistState();
+    return;
+  }
+
+  const coachActivity = event.target.closest('[data-input="logicoach-activity"]');
+  if (coachActivity && state.activeTool === "logicoach") {
+    state.logicoach = { ...state.logicoach, businessActivity: coachActivity.value.slice(0, 200) };
+    persistState();
+    return;
+  }
+
   const matchStudent = event.target.closest('[data-input="logimatch-student"]');
   if (matchStudent && state.activeTool === "logimatch") {
     state.logimatch = {
@@ -3697,9 +3848,17 @@ function goLogiCoachStep(direction) {
 }
 
 function generateLogiCoachDiagnostic() {
+  if (!isLogiCoachEmail(state.logicoach.studentEmail)) {
+    showToast("Escribe un correo valido para recibir tu plan.");
+    return;
+  }
+  if (!String(state.logicoach.businessActivity || "").trim()) {
+    showToast("Describe a que se dedica tu negocio antes de generar el diagnostico.");
+    return;
+  }
   const answered = getLogiCoachAnsweredCount(state.logicoach.answers);
-  if (answered === 0) {
-    showToast("Contesta al menos una pregunta antes de generar el diagnostico.");
+  if (answered < 6) {
+    showToast("Contesta al menos 6 preguntas antes de generar el diagnostico.");
     return;
   }
   const evaluation = evaluateLogiCoach(state.logicoach.answers);
@@ -3707,10 +3866,76 @@ function generateLogiCoachDiagnostic() {
     ...state.logicoach,
     stage: "result",
     evaluation,
+    plan: null,
+    planStatus: "loading",
+    deliveryStatus: "idle",
   };
   persistState();
   render();
-  showToast(`Diagnostico ${evaluation.level.label} listo.`);
+  generateLogiCoachPlan();
+}
+
+async function generateLogiCoachPlan() {
+  state.logicoach = { ...state.logicoach, planStatus: "loading" };
+  persistState();
+  render();
+  try {
+    const plan = await requestLogiCoachPlan(state.logicoach);
+    state.logicoach = { ...state.logicoach, plan, planStatus: "ready" };
+    persistState();
+    render();
+    showToast(plan.mode === "live" ? "Plan personalizado generado con IA." : "Plan de demostracion generado.");
+  } catch (error) {
+    state.logicoach = { ...state.logicoach, planStatus: "error" };
+    persistState();
+    render();
+    showToast("No pudimos generar el plan. Intenta de nuevo.");
+  }
+}
+
+async function sendLogiCoachPlanByEmail() {
+  const coach = state.logicoach;
+  if (!coach.plan || !coach.evaluation) {
+    showToast("Genera primero el plan antes de enviarlo.");
+    return;
+  }
+  if (!isLogiCoachEmail(coach.studentEmail)) {
+    showToast("El correo del alumno no es valido.");
+    return;
+  }
+  if (coach.deliveryStatus === "sending") {
+    return;
+  }
+  state.logicoach = { ...state.logicoach, deliveryStatus: "sending" };
+  persistState();
+  render();
+  try {
+    const response = await fetch("/api/send-logicoach-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        report: {
+          studentName: coach.studentName,
+          studentEmail: coach.studentEmail,
+          businessActivity: coach.businessActivity,
+          evaluation: coach.evaluation,
+          plan: coach.plan,
+        },
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    state.logicoach = { ...state.logicoach, deliveryStatus: "sent" };
+    persistState();
+    render();
+    showToast("Plan enviado a tu correo y al del profesor.");
+  } catch (error) {
+    state.logicoach = { ...state.logicoach, deliveryStatus: "error" };
+    persistState();
+    render();
+    showToast("No se pudo enviar. Intenta otra vez.");
+  }
 }
 
 function editLogiCoachAnswers() {
@@ -3821,6 +4046,12 @@ function handleClick(event) {
       break;
     case "logicoach-copy":
       copyLogiCoachMarkdown();
+      break;
+    case "logicoach-retry-plan":
+      generateLogiCoachPlan();
+      break;
+    case "logicoach-send-plan":
+      sendLogiCoachPlanByEmail();
       break;
     case "next-question":
       goNext();

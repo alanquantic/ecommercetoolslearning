@@ -241,6 +241,8 @@ try {
   }
   await expectVisible(page.getByRole("heading", { name: /LogiCoach/ }));
   await expectVisible(page.getByText(/Paso 1 · Canales y registro/));
+  await page.locator('[data-input="logicoach-email"]').fill("alumno@example.com");
+  await page.locator('[data-input="logicoach-activity"]').fill("Pasteleria artesanal en Aguascalientes con ventas locales");
   await page.getByRole("button", { name: "WhatsApp" }).first().click();
   await page.locator('textarea[data-question="q2"]').fill("Libreta manual donde anoto numero de pedido y nombre del cliente.");
   await page.locator('textarea[data-question="q3"]').fill("Nombre, telefono, direccion con CP y comprobante de pago.");
@@ -384,6 +386,37 @@ function createStaticServer(rootPath) {
       if (request.method === "POST" && requestPath === "/api/send-bingo-anecdote") {
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(JSON.stringify({ mode: "mock", delivered: true, teacherEmailId: "test-anecdote" }));
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/logicoach-plan") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(
+          JSON.stringify({
+            mode: "mock",
+            model: "mock",
+            plan: {
+              headline: "Plan inicial para tu pasteleria local",
+              summary: "Tu plan logistico arranca con bases solidas pero hay riesgos en inventario y canales.",
+              strengths: ["Identificas canales claros", "Reconoces el riesgo de stock"],
+              risks: ["Inventario a ojo", "Sin plan B de paqueteria"],
+              thirtyDayPlan: [
+                { week: "Semana 1", focus: "Centralizar pedidos", actions: ["Hoja unica de pedidos"] },
+                { week: "Semana 2", focus: "Inventario controlado", actions: ["Kardex con stock minimo"] },
+                { week: "Semana 3", focus: "Plan logistico B", actions: ["Cuenta alterna de paqueteria"] },
+                { week: "Semana 4", focus: "Medicion semanal", actions: ["KPI de pedidos a tiempo"] },
+              ],
+              checklist: ["Define canal alterno", "Documenta protocolo de retraso"],
+              metrics: ["% a tiempo", "# incidencias"],
+            },
+          })
+        );
+        return;
+      }
+
+      if (request.method === "POST" && requestPath === "/api/send-logicoach-plan") {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ mode: "mock", delivered: true, studentEmailId: "test-student", teacherEmailId: "test-teacher" }));
         return;
       }
 
