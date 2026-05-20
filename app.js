@@ -98,6 +98,7 @@ import {
 const STORAGE_KEY = "ecommerce-learning-route-v1";
 const VALID_BUSINESS_MODELS = new Set(["no-definido", "marca-propia", "reventa", "mixto"]);
 const VALID_TOOLS = new Set([
+  "home",
   "diagnosis",
   "wireframe",
   "messages",
@@ -108,6 +109,7 @@ const VALID_TOOLS = new Set([
   "logicoach",
 ]);
 const TOOL_ROUTES = {
+  home: "/",
   diagnosis: "/diagnostico",
   wireframe: "/ficha-producto",
   messages: "/mensajes",
@@ -460,7 +462,7 @@ const profileCatalog = {
 };
 
 const defaultState = {
-  activeTool: "diagnosis",
+  activeTool: "home",
   stage: "intro",
   currentQuestionIndex: 0,
   answers: Array(questions.length).fill(null),
@@ -568,13 +570,13 @@ function persistState() {
 }
 
 function sanitizeTool(value) {
-  return VALID_TOOLS.has(value) ? value : "diagnosis";
+  return VALID_TOOLS.has(value) ? value : "home";
 }
 
 function getToolFromPath(pathname = window.location.pathname) {
   const normalizedPath = normalizeRoutePath(pathname);
   if (normalizedPath === "/") {
-    return "diagnosis";
+    return "home";
   }
   return ROUTE_TO_TOOL[normalizedPath] || null;
 }
@@ -586,13 +588,12 @@ function normalizeRoutePath(pathname) {
 
 function syncToolWithLocation({ replaceUnknown = false } = {}) {
   const routeTool = getToolFromPath();
-  state.activeTool = routeTool || "diagnosis";
+  state.activeTool = routeTool || "home";
 
   const normalizedPath = normalizeRoutePath(window.location.pathname);
-  const shouldReplaceRoot = normalizedPath === "/";
   const shouldReplaceUnknown = !routeTool && replaceUnknown;
 
-  if (shouldReplaceRoot || shouldReplaceUnknown) {
+  if (shouldReplaceUnknown) {
     window.history.replaceState({ tool: state.activeTool }, "", TOOL_ROUTES[state.activeTool]);
   }
 }
@@ -690,11 +691,93 @@ function buildToolSwitcherMarkup() {
 function renderToolShell(screenMarkup, options = {}) {
   const prelude = options.preludeMarkup || "";
   appRoot.innerHTML = `
+    ${buildCompactToolHeader(state.activeTool)}
     ${prelude}
-    ${buildToolSwitcherMarkup()}
     ${screenMarkup}
   `;
   scrollActiveToolTabIntoView();
+}
+
+function findToolMeta(toolId) {
+  for (const group of TOOL_GROUPS) {
+    const found = group.tools.find((tool) => tool.id === toolId);
+    if (found) {
+      return { ...found, groupId: group.id, groupLabel: group.label };
+    }
+  }
+  return null;
+}
+
+function buildCompactToolHeader(toolId) {
+  const meta = findToolMeta(toolId);
+  const kicker = meta ? meta.kicker : "";
+  const title = meta ? meta.title : "Ruta E-commerce";
+  const groupId = meta ? meta.groupId : "strategy";
+  return `
+    <header class="tool-header" data-group="${escapeHtml(groupId)}">
+      <button
+        type="button"
+        class="tool-header-back"
+        data-action="switch-tool"
+        data-tool="home"
+        data-route="/"
+        aria-label="Volver al menu principal"
+      >
+        ← Volver al menu
+      </button>
+      <div class="tool-header-meta">
+        <span class="tool-header-kicker">${escapeHtml(kicker)}</span>
+        <strong class="tool-header-title">${escapeHtml(title)}</strong>
+      </div>
+    </header>
+  `;
+}
+
+function renderHome() {
+  const groupsMarkup = TOOL_GROUPS.map((group) => {
+    const cards = group.tools
+      .map(
+        (tool) => `
+          <button
+            type="button"
+            class="home-card"
+            data-action="switch-tool"
+            data-tool="${escapeHtml(tool.id)}"
+            data-route="${escapeHtml(TOOL_ROUTES[tool.id])}"
+          >
+            <span class="home-card-kicker">${escapeHtml(tool.kicker)}</span>
+            <strong class="home-card-title">${escapeHtml(tool.title)}</strong>
+            <span class="home-card-desc">${escapeHtml(tool.description)}</span>
+            <span class="home-card-arrow" aria-hidden="true">→</span>
+          </button>
+        `,
+      )
+      .join("");
+    return `
+      <section class="home-group" data-group="${escapeHtml(group.id)}">
+        <header class="home-group-header">
+          <h2>${escapeHtml(group.label)}</h2>
+          <p>${escapeHtml(group.description)}</p>
+        </header>
+        <div class="home-group-grid">${cards}</div>
+      </section>
+    `;
+  }).join("");
+
+  appRoot.innerHTML = `
+    <section class="screen panel-enter home-screen">
+      <header class="home-hero">
+        <p class="eyebrow">Ruta E-commerce</p>
+        <h1>Tu kit para vender en linea</h1>
+        <p class="text-muted">
+          Ocho herramientas para decidir tu modelo, preparar tu tienda, vivir las dinamicas en clase y
+          diagnosticar tu plan operativo. Empieza por la que mas te aporte hoy.
+        </p>
+      </header>
+      ${groupsMarkup}
+    </section>
+  `;
+  scrollToRouteStart();
 }
 
 function buildSessionPlanMarkup() {
@@ -755,6 +838,11 @@ function scrollActiveToolTabIntoView() {
 }
 
 function render() {
+  if (state.activeTool === "home") {
+    renderHome();
+    return;
+  }
+
   if (state.activeTool === "wireframe") {
     renderWireframeTool();
     return;
@@ -976,8 +1064,7 @@ function renderIntro() {
         </article>
       </div>
     </section>
-  `,
-  { preludeMarkup: buildSessionPlanMarkup() });
+  `);
 }
 
 function renderQuestion() {
@@ -2128,7 +2215,7 @@ function renderLogiBingoTool() {
           </div>
         </div>
         <div class="logibingo-controls">
-          <button type="button" class="ghost-button" data-action="logibingo-reset">Cantar otra ronda</button>
+          <button type="button" class="button button-ghost" data-action="logibingo-reset">Cantar otra ronda</button>
         </div>
       </article>
 
@@ -2243,13 +2330,13 @@ function renderLogiBingoTool() {
                 <div class="logibingo-modal-actions">
                   <button
                     type="button"
-                    class="primary-button"
+                    class="button button-primary"
                     data-action="logibingo-send"
                     ${sendingStatus === "sending" ? "disabled" : ""}
                   >
                     ${sendingStatus === "sending" ? "Enviando..." : "Enviar anecdota anonima"}
                   </button>
-                  <button type="button" class="ghost-button" data-action="logibingo-close-modal">
+                  <button type="button" class="button button-ghost" data-action="logibingo-close-modal">
                     Cerrar sin enviar
                   </button>
                 </div>
@@ -2490,13 +2577,13 @@ function renderLogiMatchExam(match, carriers, mipymes) {
       <footer class="logimatch-exam-footer">
         <button
           type="button"
-          class="primary-button"
+          class="button button-primary"
           data-action="logimatch-grade"
           ${ready ? "" : "disabled"}
         >
           ✅ Calificar mis 6 pares
         </button>
-        <button type="button" class="ghost-button" data-action="logimatch-reset">Empezar de nuevo</button>
+        <button type="button" class="button button-ghost" data-action="logimatch-reset">Empezar de nuevo</button>
         ${ready ? "" : '<p class="logimatch-warning">Completa tu nombre y asigna una paqueteria a cada MiPyME para habilitar el boton.</p>'}
       </footer>
     </div>
@@ -2554,8 +2641,8 @@ function renderLogiMatchExamResult(result, mipymes) {
         </p>
         <p class="logimatch-result-feedback">${escapeHtml(result.grade?.detail || "")}</p>
         <div class="logimatch-result-actions">
-          <button type="button" class="primary-button" data-action="logimatch-download">💾 Descargar evidencia para el LMS</button>
-          <button type="button" class="ghost-button" data-action="logimatch-retake">Volver a intentar</button>
+          <button type="button" class="button button-primary" data-action="logimatch-download">💾 Descargar evidencia para el LMS</button>
+          <button type="button" class="button button-ghost" data-action="logimatch-retake">Volver a intentar</button>
         </div>
       </div>
     </div>
@@ -2631,14 +2718,14 @@ function renderLogiCoachWizard() {
         <footer class="logicoach-step-footer">
           <button
             type="button"
-            class="ghost-button"
+            class="button button-ghost"
             data-action="logicoach-prev"
             ${currentStep === 0 ? "disabled" : ""}
           >Paso anterior</button>
           ${
             isLastStep
-              ? '<button type="button" class="primary-button" data-action="logicoach-generate">Generar diagnostico</button>'
-              : '<button type="button" class="primary-button" data-action="logicoach-next">Siguiente paso</button>'
+              ? '<button type="button" class="button button-primary" data-action="logicoach-generate">Generar diagnostico</button>'
+              : '<button type="button" class="button button-primary" data-action="logicoach-next">Siguiente paso</button>'
           }
         </footer>
       </article>
@@ -2768,9 +2855,9 @@ function renderLogiCoachResult() {
           </div>
         </header>
         <div class="logicoach-result-actions">
-          <button type="button" class="primary-button" data-action="logicoach-copy">📋 Copiar formato de entrega estandar</button>
-          <button type="button" class="ghost-button" data-action="logicoach-edit">Volver a editar respuestas</button>
-          <button type="button" class="ghost-button" data-action="logicoach-reset">Empezar plan nuevo</button>
+          <button type="button" class="button button-primary" data-action="logicoach-copy">📋 Copiar formato de entrega estandar</button>
+          <button type="button" class="button button-ghost" data-action="logicoach-edit">Volver a editar respuestas</button>
+          <button type="button" class="button button-ghost" data-action="logicoach-reset">Empezar plan nuevo</button>
         </div>
       </article>
 

@@ -39,15 +39,19 @@ page.on("pageerror", (error) => {
 
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await expectVisible(page.getByRole("heading", { name: /Tu kit para vender en linea/i }));
+  await expectVisible(page.getByRole("heading", { name: /Antes de operar/i }));
+  if (page.url() !== `${baseUrl}/` && !page.url().endsWith("/")) {
+    throw new Error(`La ruta inicial debe ser /. URL actual: ${page.url()}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, "home.png"), fullPage: true });
+
+  await page.getByRole("button", { name: /Diagnostico inicial\s+Diagnostico de ruta/i }).click();
   await expectVisible(page.getByRole("heading", { name: /modelo de negocio/ }));
-  const sharedHeroCount = await page.locator(".hero").count();
-  const supportPanelCount = await page.locator(".support-panel").count();
-  if (sharedHeroCount > 0 || supportPanelCount > 0) {
-    throw new Error("Las herramientas no deben renderizar el home/hero ni el panel lateral compartido.");
-  }
   if (!page.url().endsWith("/diagnostico")) {
-    throw new Error(`La ruta inicial debería normalizar a /diagnostico. URL actual: ${page.url()}`);
+    throw new Error(`Al abrir Diagnostico debe ir a /diagnostico. URL actual: ${page.url()}`);
   }
+  await expectVisible(page.getByRole("button", { name: /Volver al menu/i }));
   await page.screenshot({ path: path.join(outputDir, "intro.png"), fullPage: true });
 
   await page.locator("#student-name").fill("Andrea López");
@@ -95,7 +99,7 @@ try {
     throw new Error("No se guardó el progreso en localStorage.");
   }
 
-  await page.getByRole("button", { name: /ficha de producto/i }).click();
+  await page.goto(`${baseUrl}/ficha-producto`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/ficha-producto")) {
     throw new Error(`La ficha de producto debería vivir en /ficha-producto. URL actual: ${page.url()}`);
   }
@@ -111,7 +115,7 @@ try {
   await expectVisible(page.getByText("Objeciones a resolver"));
   await page.screenshot({ path: path.join(outputDir, "wireframe-producto.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /mensajes de tienda/i }).click();
+  await page.goto(`${baseUrl}/mensajes`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/mensajes")) {
     throw new Error(`Mensajes de tienda debería vivir en /mensajes. URL actual: ${page.url()}`);
   }
@@ -139,7 +143,7 @@ try {
   await page.goto(`${baseUrl}/ficha-producto`, { waitUntil: "networkidle" });
   await expectVisible(page.getByRole("heading", { name: /La ficha de producto/ }));
 
-  await page.getByRole("button", { name: /logistica clara/i }).click();
+  await page.goto(`${baseUrl}/logistica`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/logistica")) {
     throw new Error(`Logistica clara deberia vivir en /logistica. URL actual: ${page.url()}`);
   }
@@ -163,7 +167,7 @@ try {
   await expectVisible(page.getByText("Los mensajes logisticos se enviaron"));
   await page.screenshot({ path: path.join(outputDir, "logistica-clara.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /peso volumetrico/i }).click();
+  await page.goto(`${baseUrl}/peso-volumetrico`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/peso-volumetrico")) {
     throw new Error(`Peso volumetrico deberia vivir en /peso-volumetrico. URL actual: ${page.url()}`);
   }
@@ -177,7 +181,7 @@ try {
   await expectVisible(page.getByText("$570 MXN estimados"));
   await page.screenshot({ path: path.join(outputDir, "peso-volumetrico.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /Loteria del e-commerce\s+LogiBingo/ }).click();
+  await page.goto(`${baseUrl}/logibingo`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/logibingo")) {
     throw new Error(`LogiBingo deberia vivir en /logibingo. URL actual: ${page.url()}`);
   }
@@ -204,7 +208,7 @@ try {
   await expectVisible(page.getByText(/Coleccionista de horrores/i));
   await page.screenshot({ path: path.join(outputDir, "logibingo.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /Examen individual\s+LogiMatch/ }).click();
+  await page.goto(`${baseUrl}/logimatch`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/logimatch")) {
     throw new Error(`LogiMatch deberia vivir en /logimatch. URL actual: ${page.url()}`);
   }
@@ -231,7 +235,7 @@ try {
   }
   await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
 
-  await page.getByRole("button", { name: /Auditoria\s+LogiCoach/ }).click();
+  await page.goto(`${baseUrl}/logicoach`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/logicoach")) {
     throw new Error(`LogiCoach deberia vivir en /logicoach. URL actual: ${page.url()}`);
   }
