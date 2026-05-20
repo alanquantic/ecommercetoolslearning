@@ -1056,6 +1056,7 @@ function renderResult() {
 
         <div class="result-meta">
           <span class="meta-chip">Reporte para: ${escapeHtml(reportOwner)}</span>
+          ${renderAiModeBadge(aiAnalysis?.mode)}
           ${
             analysis.isMixed
               ? '<span class="meta-chip">Perfil mixto detectado: conviene orquestar canales, no elegir uno a ciegas.</span>'
@@ -1324,6 +1325,7 @@ function buildWireframePanelMarkup() {
         </div>
         <div class="status-stack">
           <span class="status-chip">${escapeHtml(result.pageGoal)}</span>
+          ${renderAiModeBadge(result.mode)}
         </div>
       </div>
 
@@ -1730,6 +1732,7 @@ function buildMessagesPanelMarkup() {
         </div>
         <div class="status-stack">
           <span class="status-chip">${result.messages.length} mensajes</span>
+          ${renderAiModeBadge(result.mode)}
         </div>
       </div>
 
@@ -3256,6 +3259,7 @@ function buildLogisticsPanelMarkup() {
         </div>
         <div class="status-stack">
           <span class="status-chip">${brief.currentErrors.length} errores marcados</span>
+          ${renderAiModeBadge(result.mode)}
         </div>
       </div>
 
@@ -5815,6 +5819,23 @@ function showToast(message) {
     toast.dataset.visible = "false";
     toast.setAttribute("aria-hidden", "true");
   }, 2400);
+}
+
+function renderAiModeBadge(mode) {
+  if (!mode || mode === "unknown") {
+    return "";
+  }
+  const isLive = mode === "live";
+  const label = isLive ? "IA en vivo" : "Modo demostracion";
+  const detail = isLive
+    ? "Respuesta generada con OpenAI."
+    : "Respuesta generada localmente. Configura OPENAI_API_KEY para activar la IA.";
+  return `
+    <span class="ai-mode-badge" data-mode="${isLive ? "live" : "mock"}" title="${escapeHtml(detail)}">
+      <span class="ai-mode-badge-dot" aria-hidden="true"></span>
+      <span class="ai-mode-badge-label">${escapeHtml(label)}</span>
+    </span>
+  `;
 }
 
 function escapeHtml(value) {

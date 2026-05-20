@@ -3168,6 +3168,53 @@ button {
   color: #b91c1c;
 }
 
+.ai-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.ai-mode-badge[data-mode="live"] {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-mode-badge[data-mode="mock"] {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+}
+
+.ai-mode-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  display: inline-block;
+}
+
+.ai-mode-badge[data-mode="live"] .ai-mode-badge-dot {
+  animation: ai-mode-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ai-mode-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
 .logibingo-history {
   display: grid;
   gap: 10px;
