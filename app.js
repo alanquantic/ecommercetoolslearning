@@ -585,11 +585,14 @@ function renderToolShell(screenMarkup) {
 
 function scrollActiveToolTabIntoView() {
   window.requestAnimationFrame(() => {
+    const switcher = appRoot.querySelector(".tool-switcher");
     const activeTab = appRoot.querySelector('.tool-tab[data-active="true"]');
-    if (!activeTab) {
+    if (!switcher || !activeTab) {
       return;
     }
-    activeTab.scrollIntoView({ block: "nearest", inline: "center" });
+
+    const targetLeft = activeTab.offsetLeft - (switcher.clientWidth - activeTab.clientWidth) / 2;
+    switcher.scrollLeft = Math.max(0, targetLeft);
   });
 }
 
@@ -2276,7 +2279,6 @@ function handleSubmit(event) {
     }
     persistState();
     render();
-    scrollToToolStart();
     return;
   }
 
@@ -2307,7 +2309,6 @@ function handleSubmit(event) {
     state.wireframe.brief = brief;
     persistState();
     generateProductWireframe(true);
-    scrollToToolStart();
   }
 
   if (event.target.id === "messages-form") {
@@ -2359,7 +2360,6 @@ function handleSubmit(event) {
     state.messages.delivery = createDefaultStoreMessagesState().delivery;
     persistState();
     generateStoreMessages(true);
-    scrollToToolStart();
   }
 
   if (event.target.id === "logistics-form") {
@@ -2410,7 +2410,6 @@ function handleSubmit(event) {
     state.logistics.delivery = createDefaultLogisticsState().delivery;
     persistState();
     generateLogisticsMessages(true);
-    scrollToToolStart();
   }
 }
 
@@ -2562,25 +2561,21 @@ function handleClick(event) {
     case "restart-quiz":
       resetState();
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
       break;
     case "reset-wireframe-result":
       invalidateWireframeState(true);
       persistState();
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
       break;
     case "reset-messages-result":
       invalidateStoreMessagesState(true);
       persistState();
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
       break;
     case "reset-logistics-result":
       invalidateLogisticsState(true);
       persistState();
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
       break;
     default:
       break;
@@ -2647,7 +2642,6 @@ function goNext() {
   }
   persistState();
   render();
-  scrollToToolStart();
 }
 
 function goBack() {
@@ -2658,7 +2652,6 @@ function goBack() {
   state.stage = "quiz";
   persistState();
   render();
-  scrollToToolStart();
 }
 
 function getAnsweredCount() {
@@ -2902,7 +2895,6 @@ function switchTool(nextTool) {
 
   persistState();
   render();
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function seedWireframeBriefFromDiagnosis() {
@@ -4216,12 +4208,6 @@ function showToast(message) {
     toast.dataset.visible = "false";
     toast.setAttribute("aria-hidden", "true");
   }, 2400);
-}
-
-function scrollToToolStart() {
-  window.requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-  });
 }
 
 function escapeHtml(value) {

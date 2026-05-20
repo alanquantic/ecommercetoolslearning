@@ -39,7 +39,12 @@ page.on("pageerror", (error) => {
 
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
-  await expectVisible(page.locator("text=Aprende a construir un e-commerce"));
+  await expectVisible(page.getByRole("heading", { name: /modelo de negocio/ }));
+  const sharedHeroCount = await page.locator(".hero").count();
+  const supportPanelCount = await page.locator(".support-panel").count();
+  if (sharedHeroCount > 0 || supportPanelCount > 0) {
+    throw new Error("Las herramientas no deben renderizar el home/hero ni el panel lateral compartido.");
+  }
   if (!page.url().endsWith("/diagnostico")) {
     throw new Error(`La ruta inicial debería normalizar a /diagnostico. URL actual: ${page.url()}`);
   }
