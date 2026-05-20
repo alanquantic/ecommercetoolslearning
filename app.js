@@ -502,6 +502,8 @@ appRoot.addEventListener("submit", handleSubmit);
 appRoot.addEventListener("click", handleClick);
 appRoot.addEventListener("input", handleInput);
 appRoot.addEventListener("change", handleInput);
+document.addEventListener("click", handleHelpToggleClick);
+document.addEventListener("keydown", handleHelpToggleKeydown);
 window.addEventListener("popstate", () => {
   syncToolWithLocation({ replaceUnknown: false });
   render();
@@ -1476,6 +1478,14 @@ function renderStoreMessagesTool() {
             claridad, rapidez y consistencia en los momentos que mas afectan la confianza.
           </p>
 
+          ${renderHowToPlay({
+            steps: [
+              "Llena los 12 campos con datos <strong>reales</strong> de tu tienda; la IA personaliza segun tu tono y canal.",
+              "Recibiras 10 mensajes operativos (bienvenida, producto, precio, pago, envio, retraso, postventa) listos para copiar.",
+              "Si quieres mensajes especificos de envio, retraso o dano, abre la herramienta <strong>Logistica clara</strong>.",
+            ],
+          })}
+
           <div class="info-grid">
             <div class="mini-card">
               <strong>10 momentos</strong>
@@ -1590,7 +1600,10 @@ function renderStoreMessagesTool() {
               </div>
 
               <div class="field">
-                <label for="messages-tone">Tono de marca</label>
+                <label for="messages-tone">Tono de marca ${renderHelpToggle(
+                  "messages-tono",
+                  "El tono define como suena tu mensaje: cercano-amable es informal y empatico (ideal para WhatsApp y comunidades chicas), profesional-claro es directo y formal (B2B, ticket alto), juvenil-divertido usa humor y emojis, experto-confiable transmite autoridad tecnica.",
+                )}</label>
                 <select id="messages-tone" name="tone">
                   ${buildSelectOptions(
                     [
@@ -1624,7 +1637,10 @@ function renderStoreMessagesTool() {
               </div>
 
               <div class="field">
-                <label for="messages-shipping-type">Tipo de envio o entrega</label>
+                <label for="messages-shipping-type">Tipo de envio o entrega ${renderHelpToggle(
+                  "messages-shipping",
+                  "Paqueteria nacional usa Estafeta, FedEx, DHL para envios foraneos (2-5 dias). Mensajeria local usa Uber Direct o cadetes (mismo dia, ciudad). Entrega digital es producto descargable o servicio sin paquete fisico. Pick-up es recoleccion en sucursal o punto fisico.",
+                )}</label>
                 <select id="messages-shipping-type" name="shippingType">
                   ${buildSelectOptions(
                     [
@@ -1881,7 +1897,10 @@ function renderVolumetricTool() {
 
             <div class="form-split">
               <div class="field">
-                <label for="volumetric-factor">Factor volumetrico</label>
+                <label for="volumetric-factor">Factor volumetrico ${renderHelpToggle(
+                  "factor-volumetrico",
+                  "El factor cambia segun el tipo de envio: 5000 es el estandar terrestre nacional (Estafeta, FedEx terrestre, 99 Minutos). 6000 se usa en aereo o internacional (DHL Express, Aeromexico). 4000 es el factor mas estricto que algunas paqueterias premium aplican.",
+                )}</label>
                 <select id="volumetric-factor" name="factor" data-volumetric-field="factor">
                   ${getFactorOptions()
                     .map(
@@ -2081,6 +2100,13 @@ function renderLogiBingoTool() {
           Marca cada error que ya viviste vendiendo en linea. Cada vez que completes una linea de cuatro
           (fila, columna o diagonal) abriremos un espacio para que cuentes tu peor anecdota.
         </p>
+        ${renderHowToPlay({
+          steps: [
+            "Marca solo los errores que <strong>ya viviste</strong> vendiendo en linea. Se sincero, nadie te juzga.",
+            "Cada linea de 4 (fila, columna o diagonal) abre un espacio para que cuentes tu peor anecdota.",
+            "Tu anecdota llega <strong>anonima</strong> al profesor para discutirla en clase.",
+          ],
+        })}
         <div class="logibingo-metrics" role="status" aria-live="polite">
           <div class="logibingo-metric">
             <span class="logibingo-metric-label">Errores marcados</span>
@@ -2781,6 +2807,14 @@ function renderLogisticsTool() {
             La logistica no solo mueve productos. Tambien sostiene la confianza del cliente.
             Esta herramienta genera mensajes concretos para entrega, guias, retrasos y problemas.
           </p>
+
+          ${renderHowToPlay({
+            steps: [
+              "Describe tu operacion (negocio, cobertura, paqueteria, tiempo de preparacion).",
+              "En la lista de errores, marca <strong>solo los que SI cometes hoy</strong>; la IA te dara mensajes que los prevengan.",
+              "Recibiras 5 mensajes (entrega, confirmacion, aviso, retraso, dano) en version <strong>debil vs clara</strong>.",
+            ],
+          })}
 
           <div class="info-grid">
             <div class="mini-card">
@@ -5439,6 +5473,74 @@ function showToast(message) {
     toast.dataset.visible = "false";
     toast.setAttribute("aria-hidden", "true");
   }, 2400);
+}
+
+function renderHowToPlay({ steps }) {
+  const items = steps.map((step) => `<li>${step}</li>`).join("");
+  return `
+    <details class="how-to-play" open>
+      <summary>
+        <span class="how-to-play-eyebrow">🎯 Como se juega</span>
+        <span class="how-to-play-hint">Toca para ocultar</span>
+      </summary>
+      <ol class="how-to-play-steps">${items}</ol>
+    </details>
+  `;
+}
+
+function renderHelpToggle(key, helpText) {
+  return `
+    <span class="help-toggle-group">
+      <button
+        type="button"
+        class="help-toggle"
+        data-help="${escapeHtml(key)}"
+        aria-label="Ver ayuda"
+        aria-expanded="false"
+      >?</button>
+      <span class="help-popover" data-help-for="${escapeHtml(key)}" hidden>
+        ${escapeHtml(helpText)}
+      </span>
+    </span>
+  `;
+}
+
+function handleHelpToggleClick(event) {
+  const toggle = event.target.closest(".help-toggle");
+  if (toggle) {
+    event.preventDefault();
+    const key = toggle.dataset.help;
+    const popover = document.querySelector(`.help-popover[data-help-for="${CSS.escape(key)}"]`);
+    if (!popover) {
+      return;
+    }
+    const willOpen = popover.hasAttribute("hidden");
+    closeAllHelpPopovers();
+    if (willOpen) {
+      popover.removeAttribute("hidden");
+      toggle.setAttribute("aria-expanded", "true");
+    }
+    return;
+  }
+  if (event.target.closest(".help-popover")) {
+    return;
+  }
+  closeAllHelpPopovers();
+}
+
+function handleHelpToggleKeydown(event) {
+  if (event.key === "Escape") {
+    closeAllHelpPopovers();
+  }
+}
+
+function closeAllHelpPopovers() {
+  document.querySelectorAll(".help-popover:not([hidden])").forEach((popover) => {
+    popover.setAttribute("hidden", "");
+  });
+  document.querySelectorAll('.help-toggle[aria-expanded="true"]').forEach((toggle) => {
+    toggle.setAttribute("aria-expanded", "false");
+  });
 }
 
 function renderAiModeBadge(mode) {
