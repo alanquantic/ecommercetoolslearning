@@ -226,6 +226,7 @@ try {
   await page.getByRole("button", { name: /Calificar mis 6 pares/i }).click();
   await expectVisible(page.getByText(/Examen calificado:/i));
   await expectVisible(page.getByText(/Detalle por par/));
+  await expectVisible(page.getByText(/Las respuestas ideales y por que/i));
   const matchDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Descargar evidencia/i }).click();
   const matchDownload = await matchDownloadPromise;

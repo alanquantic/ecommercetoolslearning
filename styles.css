@@ -4016,6 +4016,138 @@ button {
   align-items: center;
 }
 
+.logimatch-ideal {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(79, 70, 229, 0.04));
+  border: 1px solid rgba(16, 185, 129, 0.24);
+}
+
+.logimatch-ideal summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.logimatch-ideal summary::-webkit-details-marker {
+  display: none;
+}
+
+.logimatch-ideal summary::after {
+  content: "▾";
+  color: #047857;
+  font-size: 1rem;
+  transition: transform var(--transition);
+}
+
+.logimatch-ideal[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.logimatch-ideal-eyebrow {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.logimatch-ideal-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.logimatch-ideal-intro {
+  margin: 14px 0 4px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.logimatch-ideal-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.logimatch-ideal-item {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-left: 4px solid rgba(16, 185, 129, 0.6);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.logimatch-ideal-item[data-state="miss"] {
+  border-left-color: rgba(245, 158, 11, 0.7);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.04), #fff 70%);
+}
+
+.logimatch-ideal-item header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.logimatch-ideal-item header h4 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+.logimatch-ideal-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.logimatch-ideal-badge[data-state="ok"] {
+  background: rgba(16, 185, 129, 0.16);
+  color: #047857;
+}
+
+.logimatch-ideal-badge[data-state="miss"] {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
+.logimatch-ideal-item p {
+  margin: 0;
+  color: var(--text);
+}
+
+.logimatch-ideal-item p strong {
+  color: var(--muted);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.logimatch-ideal-needs strong,
+.logimatch-ideal-match strong {
+  color: var(--text);
+}
+
+.logimatch-ideal-fail {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .logimatch-pair-results {
   margin-top: 16px;
   display: grid;

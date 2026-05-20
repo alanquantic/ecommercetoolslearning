@@ -77,6 +77,7 @@ import {
   getAssignedCount as getMatchAssignedCount,
   getCarrierById as getMatchCarrier,
   getCarriers as getMatchCarriers,
+  getIdealAnswers as getMatchIdealAnswers,
   getMipymeById as getMatchMipyme,
   getMipymes as getMatchMipymes,
   isExamReady as isMatchExamReady,
@@ -2654,6 +2655,54 @@ function renderLogiMatchExamResult(result, mipymes) {
       <h3>Detalle por par</h3>
       <div class="logimatch-pair-results-grid">${detailCards}</div>
     </section>
+
+    ${renderLogiMatchIdealAnswers(result.pairs)}
+  `;
+}
+
+function renderLogiMatchIdealAnswers(pairs) {
+  const ideal = getMatchIdealAnswers();
+  const studentChoices = new Map((pairs || []).map((pair) => [pair.mipymeId, pair]));
+
+  const items = ideal
+    .map((answer) => {
+      const choice = studentChoices.get(answer.mipymeId);
+      const studentCarrier = choice?.carrierId || "";
+      const idealCarrierIds = answer.bestMatches.map((m) => m.carrierId);
+      const hitIdeal = idealCarrierIds.includes(studentCarrier);
+      const matchNames = answer.bestMatches.map((m) => escapeHtml(m.carrierName)).join(" o ");
+
+      return `
+        <article class="logimatch-ideal-item" data-state="${hitIdeal ? "ok" : "miss"}">
+          <header>
+            <h4>${escapeHtml(answer.mipymeName)}</h4>
+            <span class="logimatch-ideal-badge" data-state="${hitIdeal ? "ok" : "miss"}">
+              ${hitIdeal ? "✓ Acertaste" : "○ Tu eleccion fue distinta"}
+            </span>
+          </header>
+          <p class="logimatch-ideal-needs"><strong>Lo que necesita:</strong> ${escapeHtml(answer.needs)}</p>
+          <p class="logimatch-ideal-match">
+            <strong>✅ Match perfecto:</strong> ${matchNames}
+          </p>
+          <p class="logimatch-ideal-why"><strong>Por que funciona:</strong> ${escapeHtml(answer.whyTheyWork)}</p>
+          <p class="logimatch-ideal-fail"><strong>Por que fallan los demas:</strong> ${escapeHtml(answer.whyOthersFail)}</p>
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <details class="logimatch-ideal">
+      <summary>
+        <span class="logimatch-ideal-eyebrow">💡 Las respuestas ideales y por que</span>
+        <span class="logimatch-ideal-hint">Abrir para repasar el razonamiento de cada par</span>
+      </summary>
+      <p class="logimatch-ideal-intro text-muted">
+        Aqui te explicamos por que cada MiPyME tiene su match perfecto, que es lo que necesita y por que las otras opciones fallan.
+        <strong>Si vas a reintentar el examen, mejor cierra esta seccion antes</strong> para no spoilearte las respuestas.
+      </p>
+      <div class="logimatch-ideal-list">${items}</div>
+    </details>
   `;
 }
 
