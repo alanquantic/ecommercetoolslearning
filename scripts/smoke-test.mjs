@@ -129,7 +129,7 @@ try {
   await page.locator("#messages-payment-methods").fill("Transferencia y tarjeta");
   await page.locator("#messages-return-policy").fill("Cambios dentro de 7 dias si el empaque esta cerrado.");
   await page.getByRole("button", { name: /generar mensajes/i }).click();
-  await expectVisible(page.getByText("Kit de mensajes", { exact: true }));
+  await expectVisible(page.getByText(/Kit de mensajes de venta/));
   await expectVisible(page.getByRole("heading", { name: "Bienvenida" }));
   await expectVisible(page.getByRole("heading", { name: "Retraso" }));
   await expectVisible(page.getByRole("heading", { name: "Cambio o devolucion" }));

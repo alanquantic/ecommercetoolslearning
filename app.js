@@ -51,19 +51,6 @@ import {
   normalizeVolumetricState,
 } from "./lib/volumetric-weight.js";
 import {
-  calculatePackage,
-  createDefaultLogiChallengedState,
-  createPackageFromForm,
-  formatCurrency as formatLogiCurrency,
-  formatNumber as formatLogiNumber,
-  getBoxScale,
-  getProducts as getLogiProducts,
-  getTableOptions,
-  getZones as getLogiZones,
-  normalizeForm as normalizeLogiForm,
-  normalizeLogiChallengedState,
-} from "./lib/logichallenged.js";
-import {
   closeModal as closeBingoModal,
   countCompletedLines as countBingoLines,
   countSelected as countBingoSelected,
@@ -158,15 +145,15 @@ const TOOL_GROUPS = [
       },
       {
         id: "messages",
-        kicker: "Comunicacion de venta",
+        kicker: "💬 Comunicacion de venta",
         title: "Mensajes de tienda",
-        description: "Respuestas claras para venta, pagos y postventa.",
+        description: "Bienvenida, ficha, precio, pago y postventa. Conversion y servicio.",
       },
       {
         id: "logistics",
-        kicker: "Comunicacion logistica",
+        kicker: "🚚 Comunicacion de envio",
         title: "Logistica clara",
-        description: "Tiempos, guias y retrasos convertidos en mensajes confiables.",
+        description: "Promesa de entrega, aviso de guia, retraso, dano y devolucion.",
       },
       {
         id: "volumetric",
@@ -497,7 +484,6 @@ const defaultState = {
   messages: createDefaultStoreMessagesState(),
   logistics: createDefaultLogisticsState(),
   volumetric: createDefaultVolumetricState(),
-  logichallenged: createDefaultLogiChallengedState(),
   logibingo: createDefaultLogiBingoState(),
   logimatch: createDefaultLogiMatchState(),
   logicoach: createDefaultLogiCoachState(),
@@ -505,7 +491,6 @@ const defaultState = {
 
 let state = loadState();
 let aiRequestId = 0;
-let logiTimerId = null;
 
 const appRoot = document.querySelector("#app-root");
 const toast = document.querySelector("#toast");
@@ -545,7 +530,6 @@ function loadState() {
       messages: normalizeStoreMessagesState(parsed.messages),
       logistics: normalizeLogisticsState(parsed.logistics),
       volumetric: normalizeVolumetricState(parsed.volumetric),
-      logichallenged: normalizeLogiChallengedState(parsed.logichallenged),
       logibingo: normalizeLogiBingoState(parsed.logibingo),
       logimatch: normalizeLogiMatchState(parsed.logimatch),
       logicoach: normalizeLogiCoachState(parsed.logicoach),
@@ -649,15 +633,6 @@ function resetVolumetricState() {
   state.volumetric = createDefaultVolumetricState();
 }
 
-function resetLogiChallengedForm() {
-  const currentForm = normalizeLogiForm(state.logichallenged.form);
-  state.logichallenged.form = {
-    ...createDefaultLogiChallengedState().form,
-    tableNumber: currentForm.tableNumber,
-    zone: currentForm.zone,
-  };
-}
-
 function resetState() {
   state = structuredClone(defaultState);
   aiRequestId += 1;
@@ -709,12 +684,66 @@ function buildToolSwitcherMarkup() {
   `;
 }
 
-function renderToolShell(screenMarkup) {
+function renderToolShell(screenMarkup, options = {}) {
+  const prelude = options.preludeMarkup || "";
   appRoot.innerHTML = `
+    ${prelude}
     ${buildToolSwitcherMarkup()}
     ${screenMarkup}
   `;
   scrollActiveToolTabIntoView();
+}
+
+function buildSessionPlanMarkup() {
+  const items = [
+    {
+      step: 1,
+      label: "Antes de empezar",
+      tool: "Diagnostico de ruta",
+      use: "Define si conviene tienda propia, marketplace o modelo hibrido.",
+    },
+    {
+      step: 2,
+      label: "Preparar la operacion",
+      tool: "Ficha de producto · Mensajes · Logistica clara · Peso volumetrico",
+      use: "Genera la pagina, los mensajes y simula tu primera caja.",
+    },
+    {
+      step: 3,
+      label: "Dinamica en clase",
+      tool: "LogiBingo · LogiMatch",
+      use: "Activa la conversacion grupal y la subasta por mesa.",
+    },
+    {
+      step: 4,
+      label: "Auditoria final",
+      tool: "LogiCoach",
+      use: "Diagnostica el plan operativo y entrega el formato listo para el LMS.",
+    },
+  ]
+    .map(
+      (entry) => `
+        <li class="session-plan-item">
+          <span class="session-plan-step">${entry.step}</span>
+          <div>
+            <p class="session-plan-label">${escapeHtml(entry.label)}</p>
+            <p class="session-plan-tool">${escapeHtml(entry.tool)}</p>
+            <p class="session-plan-use">${escapeHtml(entry.use)}</p>
+          </div>
+        </li>
+      `,
+    )
+    .join("");
+
+  return `
+    <details class="session-plan" open>
+      <summary>
+        <span class="session-plan-eyebrow">📋 Plan de sesion sugerido</span>
+        <span class="session-plan-hint">Abre o cierra para guiarte por el orden recomendado.</span>
+      </summary>
+      <ol class="session-plan-list">${items}</ol>
+    </details>
+  `;
 }
 
 function scrollActiveToolTabIntoView() {
@@ -944,7 +973,8 @@ function renderIntro() {
         </article>
       </div>
     </section>
-  `);
+  `,
+  { preludeMarkup: buildSessionPlanMarkup() });
 }
 
 function renderQuestion() {
@@ -1439,7 +1469,7 @@ function renderStoreMessagesTool() {
     <section class="screen panel-enter">
       <div class="intro-grid messages-intro-grid">
         <article class="surface-card intro-copy">
-          <p class="eyebrow">Mensajes para tienda</p>
+          <p class="eyebrow">💬 Mensajes para tu tienda</p>
           <h2>Toda tienda necesita respuestas listas antes de que el cliente pregunte.</h2>
           <p class="text-muted">
             Los mensajes preparados no deben sonar roboticos. Deben ayudar a responder con
@@ -1671,7 +1701,7 @@ function buildMessagesPanelMarkup() {
       <section class="result-card messages-panel">
         <div class="ai-header">
           <div>
-            <p class="eyebrow">Kit de mensajes</p>
+            <p class="eyebrow">💬 Kit de mensajes de venta</p>
             <h3 class="ai-title">Estamos preparando respuestas claras para cada momento de la compra.</h3>
           </div>
           <span class="status-chip status-chip-active">Generando</span>
@@ -1690,7 +1720,7 @@ function buildMessagesPanelMarkup() {
       <section class="result-card messages-panel">
         <div class="ai-header">
           <div>
-            <p class="eyebrow">Kit de mensajes</p>
+            <p class="eyebrow">💬 Kit de mensajes de venta</p>
             <h3 class="ai-title">No pudimos generar los mensajes en este intento.</h3>
           </div>
           <button class="button button-secondary" type="button" data-action="retry-messages">
@@ -1704,7 +1734,7 @@ function buildMessagesPanelMarkup() {
   if (state.messages.status !== "ready" || !state.messages.result) {
     return `
       <section class="result-card messages-panel messages-empty">
-        <p class="eyebrow">Kit de mensajes</p>
+        <p class="eyebrow">💬 Kit de mensajes de venta</p>
         <h3 class="ai-title">Aqui apareceran 10 mensajes listos para adaptar y usar.</h3>
         <p class="helper-copy">
           Cubriremos bienvenida, informacion de producto, precio, pedido, pago, envio,
@@ -1721,7 +1751,7 @@ function buildMessagesPanelMarkup() {
     <section class="result-card messages-panel">
       <div class="wireframe-header">
         <div>
-          <p class="eyebrow">Kit de mensajes</p>
+          <p class="eyebrow">💬 Kit de mensajes de venta</p>
           <h3 class="ai-title">${escapeHtml(result.headline)}</h3>
           <p class="helper-copy">${escapeHtml(result.strategyNote)}</p>
           <div class="tag-grid">
@@ -2027,239 +2057,6 @@ function buildVolumetricNumberField(name, label, value, suffix, step = "1") {
         <span>${escapeHtml(suffix)}</span>
       </div>
     </div>
-  `;
-}
-
-function renderLogiChallengedTool() {
-  ensureLogiTimer();
-  const logi = state.logichallenged;
-  renderToolShell(`
-    <section class="screen panel-enter logi-screen">
-      <header class="logi-header">
-        <div>
-          <h2>LogiChallenged</h2>
-          <p>Taller de Optimizacion</p>
-        </div>
-        ${buildLogiTimerMarkup(logi)}
-      </header>
-
-      <nav class="logi-tabs" aria-label="Secciones LogiChallenged">
-        <button type="button" data-action="logi-tab" data-tab="simulator" data-active="${logi.activeTab === "simulator"}">
-          📦 Simulador y Registro
-        </button>
-        <button type="button" data-action="logi-tab" data-tab="gallery" data-active="${logi.activeTab === "gallery"}">
-          🎨 Galeria Walk & Votacion
-          <span>${logi.packages.length}</span>
-        </button>
-      </nav>
-
-      ${logi.activeTab === "gallery" ? buildLogiGalleryMarkup(logi) : buildLogiSimulatorMarkup(logi)}
-    </section>
-  `);
-}
-
-function buildLogiTimerMarkup(logi) {
-  const isDone = logi.timerSeconds <= 0;
-  return `
-    <div class="logi-timer" data-done="${isDone}">
-      <div>
-        <span>Tiempo restante</span>
-        <strong>${formatLogiTimer(logi.timerSeconds)}</strong>
-      </div>
-      <div class="logi-timer-actions">
-        <button type="button" data-action="logi-toggle-timer" aria-label="${logi.timerRunning ? "Pausar" : "Iniciar"} temporizador">
-          ${logi.timerRunning ? "Pausa" : "Play"}
-        </button>
-        <button type="button" data-action="logi-reset-timer">Reiniciar</button>
-      </div>
-    </div>
-  `;
-}
-
-function buildLogiSimulatorMarkup(logi) {
-  const form = normalizeLogiForm(logi.form);
-  const calc = calculatePackage(form);
-  const box = getBoxScale(form);
-
-  return `
-    <div class="logi-workbench">
-      <article class="logi-panel">
-        <div class="logi-panel-heading">
-          <p>Captura por mesa</p>
-          <h3>Publica el empaque del equipo</h3>
-        </div>
-        <form id="logi-form" class="logi-form">
-          <div class="logi-field">
-            <label for="logi-table">Mesa / Equipo</label>
-            <select id="logi-table" name="tableNumber">
-              ${getTableOptions().map((item) => `<option value="${item}" ${item === form.tableNumber ? "selected" : ""}>Mesa ${item}</option>`).join("")}
-            </select>
-          </div>
-
-          <div class="logi-field">
-            <label for="logi-store">Nombre de la Tienda</label>
-            <input id="logi-store" name="storeName" type="text" maxlength="80" required value="${escapeHtml(form.storeName)}" placeholder="Ej. Empaques Aurora">
-          </div>
-
-          <div class="logi-field">
-            <label for="logi-product">Producto Asignado</label>
-            <select id="logi-product" name="product">
-              ${getLogiProducts().map((product) => `<option value="${escapeHtml(product)}" ${product === form.product ? "selected" : ""}>${escapeHtml(product)}</option>`).join("")}
-            </select>
-          </div>
-
-          <div class="logi-two">
-            <div class="logi-field">
-              <label for="logi-price">Precio del Producto ($)</label>
-              <input id="logi-price" name="productPrice" type="number" min="0" step="1" required value="${escapeHtml(form.productPrice)}" placeholder="320">
-            </div>
-            <div class="logi-field">
-              <label for="logi-weight">Peso Real (kg)</label>
-              <input id="logi-weight" name="realWeight" type="number" min="0" step="0.1" required value="${escapeHtml(form.realWeight)}" placeholder="1.2">
-            </div>
-          </div>
-
-          <div class="logi-preset-row">
-            <button type="button" data-action="logi-preset" data-size="small">Caja Chica (16 x 12 x 8 cm)</button>
-            <button type="button" data-action="logi-preset" data-size="medium">Caja Mediana (25 x 20 x 15 cm)</button>
-          </div>
-
-          <div class="logi-three">
-            <div class="logi-field">
-              <label for="logi-length">Largo (cm)</label>
-              <input id="logi-length" name="length" type="number" min="0" step="1" required value="${escapeHtml(form.length)}" placeholder="25">
-            </div>
-            <div class="logi-field">
-              <label for="logi-width">Ancho (cm)</label>
-              <input id="logi-width" name="width" type="number" min="0" step="1" required value="${escapeHtml(form.width)}" placeholder="20">
-            </div>
-            <div class="logi-field">
-              <label for="logi-height">Alto (cm)</label>
-              <input id="logi-height" name="height" type="number" min="0" step="1" required value="${escapeHtml(form.height)}" placeholder="15">
-            </div>
-          </div>
-
-          <fieldset class="logi-zone-group">
-            <legend>Zona de Destino</legend>
-            ${getLogiZones()
-              .map(
-                (zone) => `
-                  <label data-active="${zone.id === form.zone}">
-                    <input type="radio" name="zone" value="${zone.id}" ${zone.id === form.zone ? "checked" : ""}>
-                    <strong>${escapeHtml(zone.label)}</strong>
-                    <span>${escapeHtml(zone.detail)}</span>
-                  </label>
-                `
-              )
-              .join("")}
-          </fieldset>
-
-          <button class="button button-primary logi-submit" type="submit">Publicar empaque en galeria</button>
-          ${logi.notice ? `<p class="logi-notice">${escapeHtml(logi.notice)}</p>` : ""}
-        </form>
-      </article>
-
-      <article class="logi-panel logi-analytics">
-        <div class="logi-panel-heading">
-          <p>Analitica en tiempo real</p>
-          <h3>Lo que cobraria la paqueteria</h3>
-        </div>
-
-        <div class="logi-weight-compare">
-          <div data-winner="${calc.dominant === "real"}">
-            <span>Peso Real</span>
-            <strong>${formatLogiNumber(Number(form.realWeight) || 0, 2)} kg</strong>
-          </div>
-          <div data-winner="${calc.dominant === "volumetric"}">
-            <span>Peso Volumetrico</span>
-            <strong>${formatLogiNumber(calc.volumetricWeight, 2)} kg</strong>
-          </div>
-        </div>
-
-        <div class="logi-box-stage" aria-label="Caja 3D simulada">
-          <div class="logi-box" style="--box-w:${box.width}px;--box-h:${box.height}px;--box-d:${box.depth}px;">
-            <span>${formatLogiNumber(Number(form.length) || 0, 0)} x ${formatLogiNumber(Number(form.width) || 0, 0)} x ${formatLogiNumber(Number(form.height) || 0, 0)} cm</span>
-          </div>
-        </div>
-
-        <div class="logi-kpi-grid">
-          <div>
-            <span>Peso cobrable</span>
-            <strong>${calc.chargeableWeight} kg</strong>
-          </div>
-          <div>
-            <span>Costo envio</span>
-            <strong>${formatLogiCurrency(calc.shippingCost)}</strong>
-          </div>
-          <div>
-            <span>Impacto</span>
-            <strong>${formatLogiNumber(calc.financialImpact, 1)}%</strong>
-          </div>
-        </div>
-
-        ${
-          calc.isHighImpact
-            ? `<div class="logi-alert" data-risk="high">⚠️ ¡Alerta de Costo! El envio consume el ${formatLogiNumber(calc.financialImpact, 1)}% del precio. Estas pagando por transportar aire. Optimiza la caja.</div>`
-            : `<div class="logi-alert" data-risk="ok">🟢 Empaque Eficiente</div>`
-        }
-      </article>
-    </div>
-  `;
-}
-
-function buildLogiGalleryMarkup(logi) {
-  const filtered = logi.filterTable === "all" ? logi.packages : logi.packages.filter((item) => item.tableNumber === logi.filterTable);
-
-  return `
-    <section class="logi-gallery">
-      <div class="logi-gallery-toolbar">
-        <div>
-          <p>Galeria Walk</p>
-          <h3>${filtered.length} empaques publicados</h3>
-        </div>
-        <label>
-          Filtrar por mesa
-          <select data-action="logi-filter">
-            <option value="all" ${logi.filterTable === "all" ? "selected" : ""}>Ver Todas las Mesas</option>
-            ${getTableOptions().map((item) => `<option value="${item}" ${logi.filterTable === item ? "selected" : ""}>Mesa ${item}</option>`).join("")}
-          </select>
-        </label>
-      </div>
-
-      <div class="logi-card-grid">
-        ${
-          filtered.length > 0
-            ? filtered.map((item) => buildLogiGalleryCard(item)).join("")
-            : `<article class="logi-empty">No hay empaques publicados para este filtro.</article>`
-        }
-      </div>
-    </section>
-  `;
-}
-
-function buildLogiGalleryCard(item) {
-  const calc = calculatePackage(item);
-  return `
-    <article class="logi-package-card">
-      <div class="logi-package-top">
-        <span>Mesa ${escapeHtml(item.tableNumber)}</span>
-        <strong>${escapeHtml(item.storeName)}</strong>
-      </div>
-      <p>${escapeHtml(item.product)}</p>
-      <div class="logi-package-meta">
-        <span>${formatLogiNumber(item.length, 0)} x ${formatLogiNumber(item.width, 0)} x ${formatLogiNumber(item.height, 0)} cm</span>
-        <span>${calc.chargeableWeight} kg cobrables</span>
-        <span>${formatLogiCurrency(calc.shippingCost)}</span>
-      </div>
-      <div class="logi-impact" data-risk="${calc.financialImpact > 30 ? "high" : "ok"}">
-        Impacto: ${formatLogiNumber(calc.financialImpact, 1)}%
-      </div>
-      <div class="logi-votes">
-        <button type="button" data-action="logi-vote" data-id="${escapeHtml(item.id)}" data-vote="safe">🛡️ Más Seguro <strong>${item.votes.safe}</strong></button>
-        <button type="button" data-action="logi-vote" data-id="${escapeHtml(item.id)}" data-vote="pretty">✨ Más Bonito <strong>${item.votes.pretty}</strong></button>
-        <button type="button" data-action="logi-vote" data-id="${escapeHtml(item.id)}" data-vote="efficient">📦 Más Eficiente <strong>${item.votes.efficient}</strong></button>
-      </div>
-    </article>
   `;
 }
 
@@ -2978,7 +2775,7 @@ function renderLogisticsTool() {
     <section class="screen panel-enter">
       <div class="intro-grid logistics-intro-grid">
         <article class="surface-card intro-copy logistics-copy">
-          <p class="eyebrow">Comunicacion logistica</p>
+          <p class="eyebrow">🚚 Comunicacion de envio</p>
           <h2>No prometas rapido; promete claro.</h2>
           <p class="text-muted">
             La logistica no solo mueve productos. Tambien sostiene la confianza del cliente.
@@ -3191,7 +2988,7 @@ function buildLogisticsPanelMarkup() {
       <section class="result-card logistics-panel">
         <div class="ai-header">
           <div>
-            <p class="eyebrow">Mensajes logisticos</p>
+            <p class="eyebrow">🚚 Kit de comunicacion de envio</p>
             <h3 class="ai-title">Estamos convirtiendo tu promesa de entrega en comunicacion clara.</h3>
           </div>
           <span class="status-chip status-chip-active">Generando</span>
@@ -3210,7 +3007,7 @@ function buildLogisticsPanelMarkup() {
       <section class="result-card logistics-panel">
         <div class="ai-header">
           <div>
-            <p class="eyebrow">Mensajes logisticos</p>
+            <p class="eyebrow">🚚 Kit de comunicacion de envio</p>
             <h3 class="ai-title">No pudimos generar los mensajes en este intento.</h3>
           </div>
           <button class="button button-secondary" type="button" data-action="retry-logistics">
@@ -3224,7 +3021,7 @@ function buildLogisticsPanelMarkup() {
   if (state.logistics.status !== "ready" || !state.logistics.result) {
     return `
       <section class="result-card logistics-panel logistics-empty">
-        <p class="eyebrow">Mensajes logisticos</p>
+        <p class="eyebrow">🚚 Kit de comunicacion de envio</p>
         <h3 class="ai-title">Aqui veras mensajes para explicar tiempos, guias, retrasos y problemas.</h3>
         <p class="helper-copy">
           La meta no es prometer velocidad imposible: es explicar con claridad que pasa,
@@ -3248,7 +3045,7 @@ function buildLogisticsPanelMarkup() {
     <section class="result-card logistics-panel">
       <div class="wireframe-header">
         <div>
-          <p class="eyebrow">Mensajes logisticos</p>
+          <p class="eyebrow">🚚 Kit de comunicacion de envio</p>
           <h3 class="ai-title">Comunicacion logistica para ${escapeHtml(brief.businessName || "tu negocio")}</h3>
           <p class="helper-copy">No prometas rapido; promete claro.</p>
           <div class="tag-grid">
@@ -3317,43 +3114,6 @@ function buildLogisticsPanelMarkup() {
 }
 
 function handleSubmit(event) {
-  if (event.target.id === "logi-form") {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const candidate = {
-      tableNumber: formData.get("tableNumber"),
-      storeName: formData.get("storeName"),
-      product: formData.get("product"),
-      productPrice: formData.get("productPrice"),
-      realWeight: formData.get("realWeight"),
-      length: formData.get("length"),
-      width: formData.get("width"),
-      height: formData.get("height"),
-      zone: formData.get("zone"),
-    };
-    const created = createPackageFromForm(candidate);
-
-    if (created.error) {
-      state.logichallenged.notice = `Faltan datos: ${created.error.join(", ")}.`;
-      state.logichallenged.form = normalizeLogiForm(candidate);
-      persistState();
-      render();
-      return;
-    }
-
-    state.logichallenged.packages = [created.packageItem, ...state.logichallenged.packages];
-    state.logichallenged.form = {
-      ...createDefaultLogiChallengedState().form,
-      tableNumber: created.packageItem.tableNumber,
-      zone: created.packageItem.zone,
-    };
-    state.logichallenged.notice = `Empaque de Mesa ${created.packageItem.tableNumber} publicado en la galeria.`;
-    persistState();
-    render();
-    showToast("Empaque publicado.");
-    return;
-  }
-
   if (event.target.id === "volumetric-form") {
     event.preventDefault();
     updateVolumetricFromForm(event.target);
@@ -3570,38 +3330,6 @@ function handleInput(event) {
     return;
   }
 
-  const logiForm = event.target.closest("#logi-form");
-  if (logiForm && state.activeTool === "logichallenged") {
-    const formData = new FormData(logiForm);
-    state.logichallenged.form = normalizeLogiForm({
-      tableNumber: formData.get("tableNumber"),
-      storeName: formData.get("storeName"),
-      product: formData.get("product"),
-      productPrice: formData.get("productPrice"),
-      realWeight: formData.get("realWeight"),
-      length: formData.get("length"),
-      width: formData.get("width"),
-      height: formData.get("height"),
-      zone: formData.get("zone"),
-    });
-    state.logichallenged.notice = "";
-    persistState();
-
-    const shouldRenderLive = event.type === "change" || ["productPrice", "realWeight", "length", "width", "height"].includes(event.target.name);
-    if (shouldRenderLive) {
-      render();
-    }
-    return;
-  }
-
-  const logiFilter = event.target.closest('[data-action="logi-filter"]');
-  if (logiFilter) {
-    state.logichallenged.filterTable = logiFilter.value;
-    persistState();
-    render();
-    return;
-  }
-
   const field = event.target.closest("[data-volumetric-field]");
   if (!field || state.activeTool !== "volumetric") {
     return;
@@ -3645,92 +3373,6 @@ function scrollToRouteStart() {
   });
 }
 
-function toggleLogiTimer() {
-  state.logichallenged.timerRunning = state.logichallenged.timerSeconds > 0 ? !state.logichallenged.timerRunning : false;
-  persistState();
-  render();
-}
-
-function resetLogiTimer() {
-  state.logichallenged.timerSeconds = 12 * 60;
-  state.logichallenged.timerRunning = false;
-  persistState();
-  render();
-}
-
-function ensureLogiTimer() {
-  if (logiTimerId || state.activeTool !== "logichallenged" || !state.logichallenged.timerRunning) {
-    if (state.activeTool !== "logichallenged" || !state.logichallenged.timerRunning) {
-      clearLogiTimer();
-    }
-    return;
-  }
-
-  logiTimerId = window.setInterval(() => {
-    if (state.activeTool !== "logichallenged" || !state.logichallenged.timerRunning) {
-      clearLogiTimer();
-      return;
-    }
-
-    state.logichallenged.timerSeconds = Math.max(0, state.logichallenged.timerSeconds - 1);
-    if (state.logichallenged.timerSeconds === 0) {
-      state.logichallenged.timerRunning = false;
-      clearLogiTimer();
-    }
-    persistState();
-    render();
-  }, 1000);
-}
-
-function clearLogiTimer() {
-  if (!logiTimerId) {
-    return;
-  }
-  window.clearInterval(logiTimerId);
-  logiTimerId = null;
-}
-
-function applyLogiPreset(size) {
-  const dimensions =
-    size === "medium"
-      ? { length: 25, width: 20, height: 15 }
-      : { length: 16, width: 12, height: 8 };
-  state.logichallenged.form = {
-    ...normalizeLogiForm(state.logichallenged.form),
-    ...dimensions,
-  };
-  state.logichallenged.notice = "";
-  persistState();
-  render();
-}
-
-function voteLogiPackage(packageId, voteType) {
-  if (!["safe", "pretty", "efficient"].includes(voteType)) {
-    return;
-  }
-
-  state.logichallenged.packages = state.logichallenged.packages.map((item) => {
-    if (item.id !== packageId) {
-      return item;
-    }
-
-    return {
-      ...item,
-      votes: {
-        ...item.votes,
-        [voteType]: item.votes[voteType] + 1,
-      },
-    };
-  });
-  persistState();
-  render();
-}
-
-function formatLogiTimer(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
 
 function toggleLogiBingoCell(cellIndex) {
   if (!Number.isFinite(cellIndex)) {
@@ -4008,24 +3650,6 @@ function handleClick(event) {
   switch (action) {
     case "switch-tool":
       switchTool(actionButton.dataset.tool);
-      break;
-    case "logi-tab":
-      state.logichallenged.activeTab = actionButton.dataset.tab === "gallery" ? "gallery" : "simulator";
-      state.logichallenged.notice = "";
-      persistState();
-      render();
-      break;
-    case "logi-toggle-timer":
-      toggleLogiTimer();
-      break;
-    case "logi-reset-timer":
-      resetLogiTimer();
-      break;
-    case "logi-preset":
-      applyLogiPreset(actionButton.dataset.size);
-      break;
-    case "logi-vote":
-      voteLogiPackage(actionButton.dataset.id, actionButton.dataset.vote);
       break;
     case "logibingo-toggle":
       toggleLogiBingoCell(Number(actionButton.dataset.cell));
@@ -4486,10 +4110,6 @@ function switchTool(nextTool) {
 
   state.activeTool = sanitizedTool;
   setToolRoute(sanitizedTool);
-
-  if (sanitizedTool !== "logichallenged") {
-    clearLogiTimer();
-  }
 
   if (sanitizedTool === "wireframe") {
     seedWireframeBriefFromDiagnosis();
