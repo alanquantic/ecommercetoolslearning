@@ -16,7 +16,7 @@ URL pública: <https://ecommercetoolslearning.vercel.app>
 | 2. Decisión estratégica | 20 min | **Diagnóstico de ruta** | Decidir tienda propia vs marketplace vs híbrido para su proyecto. |
 | 3. Operación de tienda | 30 min | **Ficha de producto** + **Mensajes de tienda** | Generar página de producto y kit de mensajes con IA. |
 | 4. Logística operativa | 25 min | **Logística clara** + **Peso volumétrico** | Mensajes de envío y simulación de caja. |
-| 5. Examen LogiMatch | 25 min | **LogiMatch** | Cada alumno empareja las 6 MiPyMEs con su paquetería y entrega evidencia. |
+| 5. Examen LogiMatch | 25 min | **LogiMatch** | Cada alumno empareja productos con paquetería o servicios con canal de entrega y descarga evidencia. |
 | 6. Auditoría individual | 30 min | **LogiCoach** | Plan logístico personal, entrega Markdown al LMS. |
 | 7. Cierre | 15 min | Discusión con anécdotas recibidas | Lectura grupal de 3-4 anécdotas anónimas de LogiBingo. |
 
@@ -289,24 +289,33 @@ asincrónica
 
 ### Qué es
 
-**Examen interactivo individual.** Cada alumno con la URL hace los **6 pares**
-de MiPyME → paquetería y recibe una calificación 0-100. Hay dos tabs:
+**Examen interactivo individual.** Cada alumno con la URL elige un modo y hace
+los **6 pares** correspondientes. Recibe una calificación 0-100. Hay dos modos:
+
+- **Productos físicos**: MiPyME → paquetería.
+- **Servicios online**: servicio → canal de entrega.
+
+Hay dos tabs:
 
 1. **Catálogo de fichas**: 6 paqueterías (Estafeta, FedEx, DHL, 99 Minutos,
    Uber Direct, Cadete Local) + 6 perfiles de MiPyME (Pastelería, Joyería,
    Ropa, Electrónicos, Cosmética, Alimentos). Cada uno con todos sus datos
    técnicos. Material de estudio.
-2. **Hacer el examen**: el alumno escribe su nombre, asigna una paquetería a
-   cada una de las 6 MiPyMEs (dropdowns), pulsa "Calificar mis 6 pares" y
-   recibe score global + detalle por par + evidencia descargable.
+2. En modo servicios, el catálogo cambia a 6 canales de entrega (WhatsApp
+   Business, Calendly + Meet, Zoom Webinar, LMS/Hotmart, Drive + Notion,
+   Helpdesk/CRM) + 6 casos de servicio online.
+3. **Hacer el examen**: el alumno escribe su nombre, asigna una opción a cada
+   uno de los 6 perfiles (dropdowns), pulsa "Calificar mis 6 pares" y recibe
+   score global + detalle por par + evidencia descargable.
 
 ### Cómo correrlo en clase
 
 > "Abran LogiMatch. Primero vayan al **catálogo de fichas** para entender cada
-> MiPyME y cada paquetería. Pueden tardarse 5 minutos leyendo. Después, en la
-> pestaña **Hacer el examen**, escriben su nombre y asignan la paquetería que
-> creen mejor para cada MiPyME. Al final pulsan calificar y descargan la
-> evidencia que van a subir al LMS."
+> perfil y cada opción de entrega. Si están resolviendo producto físico,
+> piensen en paquetería; si están resolviendo servicio online, piensen en
+> agenda, acceso, entregables y soporte. Después, en la pestaña **Hacer el
+> examen**, escriben su nombre, asignan la mejor opción, califican y descargan
+> la evidencia que van a subir al LMS."
 
 ### Cómo correrlo asincrónico
 
@@ -334,6 +343,17 @@ y la sube. No depende de horario.
 | Cosmética "Agave Bello" | Estafeta **o** 99 Minutos | 95% |
 | Alimentos "Despensa Seca" | Estafeta | 100% |
 
+### Pares perfectos para servicios online
+
+| Servicio | Canal óptimo | Score |
+|---|---|---|
+| Consultoría "Estrategia 1:1" | Calendly + Google Meet | 100% |
+| Curso "Excel para Emprender" | LMS / Hotmart / Classroom | 100% |
+| Estudio "Marca Clara" | Drive + Notion | 100% |
+| Taller "Ventas en Vivo" | Zoom Webinar / Meet grupal | 100% |
+| Soporte "Tienda Sin Caos" | Helpdesk / CRM por correo | 100% |
+| Coaching "Nutrición Práctica" | Calendly + Google Meet | 100% |
+
 ### El error trampa
 
 **Pastelería + FedEx/DHL/Estafeta = 20%** con alerta de fracaso:
@@ -352,7 +372,7 @@ Al pulsar "💾 Descargar evidencia para el LMS" descarga un `.txt` con:
 - Calificación final (0-100%) y nivel.
 - Pares perfectos (>=95%) acertados.
 - Pares aceptables (>=80%) acertados.
-- **Detalle de cada uno de los 6 pares**: MiPyME, paquetería asignada,
+- **Detalle de cada uno de los 6 pares**: MiPyME/servicio, paquetería o canal asignado,
   score del par, feedback de la consultoría.
 - Fecha y hora.
 

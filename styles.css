@@ -3329,6 +3329,61 @@ button {
   gap: 6px;
 }
 
+.logimatch-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.logimatch-mode-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-height: 90px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.logimatch-mode-card:hover,
+.logimatch-mode-card:focus-within {
+  transform: translateY(-1px);
+  border-color: rgba(79, 70, 229, 0.38);
+  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.08);
+}
+
+.logimatch-mode-card[data-active="true"] {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.08));
+  border-color: rgba(79, 70, 229, 0.42);
+}
+
+.logimatch-mode-card input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.logimatch-mode-card strong {
+  color: #1e293b;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1rem;
+}
+
+.logimatch-mode-card span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
 .logimatch-tabs {
   display: inline-flex;
   background: #fff;
@@ -4256,6 +4311,14 @@ button {
 @media (max-width: 720px) {
   .logimatch-shell {
     padding: 12px;
+  }
+
+  .logimatch-mode-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .logimatch-mode-card {
+    min-height: auto;
   }
 
   .logimatch-card-columns {

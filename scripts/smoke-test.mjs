@@ -237,6 +237,22 @@ try {
   }
   await page.screenshot({ path: path.join(outputDir, "logimatch.png"), fullPage: true });
 
+  await page.locator('[data-input="logimatch-mode"][value="services"]').check();
+  await page.getByRole("button", { name: /Catalogo de fichas/ }).click();
+  await expectVisible(page.getByRole("heading", { name: /Canales de entrega para servicios/ }));
+  await page.getByRole("button", { name: /Hacer el examen/ }).click();
+  await page.locator("#logimatch-student").fill("Andrea Lopez");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="consulting"]').selectOption("calendly-meet");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="course"]').selectOption("lms-hotmart");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="branding"]').selectOption("drive-notion");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="workshop"]').selectOption("zoom-webinar");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="support"]').selectOption("helpdesk-crm");
+  await page.locator('select[data-input="logimatch-assignment"][data-mipyme="coaching"]').selectOption("calendly-meet");
+  await page.getByRole("button", { name: /Calificar mis 6 pares/i }).click();
+  await expectVisible(page.getByText(/Dominas la logica de entrega por tipo de servicio/i));
+  await expectVisible(page.locator(".logimatch-pair-result-carrier").filter({ hasText: "Calendly + Google Meet" }).first());
+  await page.screenshot({ path: path.join(outputDir, "logimatch-servicios.png"), fullPage: true });
+
   await page.goto(`${baseUrl}/logicoach`, { waitUntil: "networkidle" });
   if (!page.url().endsWith("/logicoach")) {
     throw new Error(`LogiCoach deberia vivir en /logicoach. URL actual: ${page.url()}`);

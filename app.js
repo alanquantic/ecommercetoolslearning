@@ -75,10 +75,10 @@ import {
   createDefaultLogiMatchState,
   evaluateAllPairs as evaluateMatchAllPairs,
   getAssignedCount as getMatchAssignedCount,
-  getCarrierById as getMatchCarrier,
   getCarriers as getMatchCarriers,
   getIdealAnswers as getMatchIdealAnswers,
-  getMipymeById as getMatchMipyme,
+  getLogiMatchModes,
+  getModeConfig as getLogiMatchModeConfig,
   getMipymes as getMatchMipymes,
   isExamReady as isMatchExamReady,
   normalizeLogiMatchState,
@@ -2361,24 +2361,45 @@ function renderLogiBingoTool() {
 
 function renderLogiMatchTool() {
   const match = state.logimatch;
+  const mode = match.mode || "products";
+  const modeConfig = getLogiMatchModeConfig(mode);
   const activeTab = match.activeTab === "exam" ? "exam" : "catalog";
-  const carriers = getMatchCarriers();
-  const mipymes = getMatchMipymes();
+  const carriers = getMatchCarriers(mode);
+  const mipymes = getMatchMipymes(mode);
+  const modeCards = getLogiMatchModes()
+    .map(
+      (item) => `
+        <label class="logimatch-mode-card" data-active="${item.id === mode}">
+          <input
+            type="radio"
+            name="logimatch-mode"
+            value="${escapeHtml(item.id)}"
+            data-input="logimatch-mode"
+            ${item.id === mode ? "checked" : ""}
+          >
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${escapeHtml(item.id === "services" ? "Servicios, asesorias, cursos y entregables digitales." : "Productos, cajas, paqueterias y entregas fisicas.")}</span>
+        </label>
+      `,
+    )
+    .join("");
 
   renderToolShell(`
     <section class="screen panel-enter logimatch-shell">
       <article class="surface-card logimatch-intro">
         <p class="eyebrow">Examen interactivo</p>
-        <h2>LogiMatch: empareja MiPyME con paqueteria</h2>
+        <h2>${escapeHtml(modeConfig.title)}</h2>
         <p class="text-muted">
-          Cada MiPyME tiene un perfil distinto (urgencia, fragilidad, cobertura, ticket).
-          Lee las 6 fichas y asigna a cada una la paqueteria que mejor le acomode.
+          ${escapeHtml(modeConfig.intro)}
           El sistema te califica los 6 pares al final.
         </p>
+        <div class="logimatch-mode-switch" role="radiogroup" aria-label="Modo de LogiMatch">
+          ${modeCards}
+        </div>
         ${renderHowToPlay({
           steps: [
-            "Revisa el <strong>catalogo de fichas</strong> para entender que necesita cada MiPyME y que ofrece cada paqueteria.",
-            "En el <strong>examen</strong>, escribe tu nombre y asigna una paqueteria a cada una de las 6 MiPyMEs.",
+            `Revisa el <strong>catalogo de fichas</strong> para entender que necesita cada ${escapeHtml(modeConfig.caseSingular.toLowerCase())} y que ofrece cada ${escapeHtml(modeConfig.optionSingular.toLowerCase())}.`,
+            `En el <strong>examen</strong>, escribe tu nombre y asigna ${escapeHtml(modeConfig.optionSingular.toLowerCase())} a cada uno de los 6 perfiles.`,
             "Cuando completes los 6 pares pulsa <strong>calificar</strong>, descarga la evidencia y subela al LMS.",
           ],
         })}
@@ -2405,36 +2426,36 @@ function renderLogiMatchTool() {
         </button>
       </nav>
 
-      ${activeTab === "catalog" ? renderLogiMatchCatalog(carriers, mipymes) : renderLogiMatchExam(match, carriers, mipymes)}
+      ${activeTab === "catalog" ? renderLogiMatchCatalog(carriers, mipymes, modeConfig) : renderLogiMatchExam(match, carriers, mipymes, modeConfig)}
     </section>
   `);
 }
 
-function renderLogiMatchCatalog(carriers, mipymes) {
+function renderLogiMatchCatalog(carriers, mipymes, modeConfig) {
   return `
     <div class="logimatch-catalog-section">
       <header class="logimatch-section-header">
-        <h3>Paqueterias (Anexo B.1)</h3>
-        <p class="text-muted">Seis perfiles para evaluar en la mesa antes de pujar.</p>
+        <h3>${escapeHtml(modeConfig.optionCatalogTitle)}</h3>
+        <p class="text-muted">${escapeHtml(modeConfig.optionCatalogDescription)}</p>
       </header>
       <div class="logimatch-carrier-grid">
-        ${carriers.map(renderCarrierCard).join("")}
+        ${carriers.map((carrier) => renderCarrierCard(carrier, modeConfig)).join("")}
       </div>
     </div>
 
     <div class="logimatch-catalog-section">
       <header class="logimatch-section-header">
-        <h3>Perfiles de MiPyME (Anexo B.2)</h3>
-        <p class="text-muted">Cada negocio tiene una urgencia y fragilidad propias.</p>
+        <h3>${escapeHtml(modeConfig.caseCatalogTitle)}</h3>
+        <p class="text-muted">${escapeHtml(modeConfig.caseCatalogDescription)}</p>
       </header>
       <div class="logimatch-mipyme-grid">
-        ${mipymes.map(renderMipymeCard).join("")}
+        ${mipymes.map((mipyme) => renderMipymeCard(mipyme, modeConfig)).join("")}
       </div>
     </div>
   `;
 }
 
-function renderCarrierCard(carrier) {
+function renderCarrierCard(carrier, modeConfig) {
   const badges = carrier.badges
     .map((badge) => `<span class="logimatch-badge" data-tone="${escapeHtml(badge.tone)}">${escapeHtml(badge.label)}</span>`)
     .join("");
@@ -2444,7 +2465,7 @@ function renderCarrierCard(carrier) {
   return `
     <article class="logimatch-card logimatch-card-carrier" aria-label="Ficha de ${escapeHtml(carrier.name)}">
       <header class="logimatch-card-header">
-        <p class="logimatch-card-eyebrow">Paqueteria</p>
+        <p class="logimatch-card-eyebrow">${escapeHtml(modeConfig.optionEyebrow)}</p>
         <h4>${escapeHtml(carrier.name)}</h4>
         <p class="logimatch-card-nickname">${escapeHtml(carrier.nickname)}</p>
         <div class="logimatch-card-badges">${badges}</div>
@@ -2471,42 +2492,42 @@ function renderCarrierCard(carrier) {
   `;
 }
 
-function renderMipymeCard(mipyme) {
+function renderMipymeCard(mipyme, modeConfig) {
   return `
     <article class="logimatch-card logimatch-card-mipyme" aria-label="Ficha de ${escapeHtml(mipyme.name)}">
       <header class="logimatch-card-header">
-        <p class="logimatch-card-eyebrow">MiPyME</p>
+        <p class="logimatch-card-eyebrow">${escapeHtml(modeConfig.caseEyebrow)}</p>
         <h4>${escapeHtml(mipyme.name)}</h4>
         <p class="logimatch-card-nickname">${escapeHtml(mipyme.headline)}</p>
         <div class="logimatch-card-badges">
-          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">Fragilidad: ${escapeHtml(mipyme.fragility.label)}</span>
-          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">Urgencia: ${escapeHtml(mipyme.urgency.label)}</span>
+          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">${escapeHtml(modeConfig.fragilityLabel)}: ${escapeHtml(mipyme.fragility.label)}</span>
+          <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">${escapeHtml(modeConfig.urgencyLabel)}: ${escapeHtml(mipyme.urgency.label)}</span>
           <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(mipyme.ticket)}</span>
         </div>
       </header>
       <dl class="logimatch-card-meta">
-        <div><dt>Producto principal</dt><dd>${escapeHtml(mipyme.product)}</dd></div>
-        <div><dt>Destinos</dt><dd>${escapeHtml(mipyme.destinations)}</dd></div>
-        <div><dt>Volumen</dt><dd>${escapeHtml(mipyme.volume)}</dd></div>
+        <div><dt>${escapeHtml(modeConfig.productLabel)}</dt><dd>${escapeHtml(mipyme.product)}</dd></div>
+        <div><dt>${escapeHtml(modeConfig.destinationLabel)}</dt><dd>${escapeHtml(mipyme.destinations)}</dd></div>
+        <div><dt>${escapeHtml(modeConfig.volumeLabel)}</dt><dd>${escapeHtml(mipyme.volume)}</dd></div>
       </dl>
       <footer class="logimatch-card-footer">
-        <strong>Lo que mas le importa:</strong> ${escapeHtml(mipyme.priority)}
+        <strong>${escapeHtml(modeConfig.priorityLabel)}:</strong> ${escapeHtml(mipyme.priority)}
       </footer>
     </article>
   `;
 }
 
-function renderLogiMatchExam(match, carriers, mipymes) {
+function renderLogiMatchExam(match, carriers, mipymes, modeConfig) {
   const studentName = match.studentName || "";
   const assignments = match.assignments || {};
-  const assignedCount = getMatchAssignedCount(assignments);
+  const assignedCount = getMatchAssignedCount(assignments, match.mode);
   const totalPairs = mipymes.length;
   const ready = isMatchExamReady(match);
   const result = match.result;
   const progressPercent = Math.round((assignedCount / totalPairs) * 100);
 
   if (result) {
-    return renderLogiMatchExamResult(result, mipymes);
+    return renderLogiMatchExamResult(result, mipymes, modeConfig);
   }
 
   const pairCards = mipymes
@@ -2518,13 +2539,13 @@ function renderLogiMatchExam(match, carriers, mipymes) {
             <p>${escapeHtml(mipyme.headline)}</p>
           </header>
           <div class="logimatch-card-badges">
-            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">Fragilidad: ${escapeHtml(mipyme.fragility.label)}</span>
-            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">Urgencia: ${escapeHtml(mipyme.urgency.label)}</span>
+            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.fragility.tone)}">${escapeHtml(modeConfig.fragilityLabel)}: ${escapeHtml(mipyme.fragility.label)}</span>
+            <span class="logimatch-badge" data-tone="${escapeHtml(mipyme.urgency.tone)}">${escapeHtml(modeConfig.urgencyLabel)}: ${escapeHtml(mipyme.urgency.label)}</span>
             <span class="logimatch-badge" data-tone="indigo">Ticket: ${escapeHtml(mipyme.ticket)}</span>
           </div>
-          <p class="logimatch-pair-priority"><strong>Lo que mas le importa:</strong> ${escapeHtml(mipyme.priority)}</p>
+          <p class="logimatch-pair-priority"><strong>${escapeHtml(modeConfig.priorityLabel)}:</strong> ${escapeHtml(mipyme.priority)}</p>
           <label class="logimatch-pair-select-label" for="logimatch-assign-${escapeHtml(mipyme.id)}">
-            Paqueteria asignada
+            ${escapeHtml(modeConfig.optionAssignedLabel)}
           </label>
           <select
             id="logimatch-assign-${escapeHtml(mipyme.id)}"
@@ -2532,7 +2553,7 @@ function renderLogiMatchExam(match, carriers, mipymes) {
             data-input="logimatch-assignment"
             data-mipyme="${escapeHtml(mipyme.id)}"
           >
-            <option value="">Selecciona una paqueteria...</option>
+            <option value="">${escapeHtml(modeConfig.optionPlaceholder)}</option>
             ${carriers
               .map(
                 (carrier) => `
@@ -2569,7 +2590,7 @@ function renderLogiMatchExam(match, carriers, mipymes) {
       <article class="logimatch-exam-progress">
         <div class="logimatch-exam-progress-header">
           <div>
-            <h3>2. Empareja las 6 MiPyMEs con su paqueteria</h3>
+            <h3>2. Empareja los 6 perfiles con su ${escapeHtml(modeConfig.optionSingular.toLowerCase())}</h3>
             <p class="text-muted">Lee el perfil y elige la opcion que mejor le acomode. Puedes cambiarla cuantas veces quieras antes de calificar.</p>
           </div>
           <span class="logimatch-exam-counter">${assignedCount} / ${totalPairs}</span>
@@ -2589,13 +2610,13 @@ function renderLogiMatchExam(match, carriers, mipymes) {
           ✅ Calificar mis 6 pares
         </button>
         <button type="button" class="button button-ghost" data-action="logimatch-reset">Empezar de nuevo</button>
-        ${ready ? "" : '<p class="logimatch-warning">Completa tu nombre y asigna una paqueteria a cada MiPyME para habilitar el boton.</p>'}
+        ${ready ? "" : `<p class="logimatch-warning">Completa tu nombre y asigna ${escapeHtml(modeConfig.optionSingular.toLowerCase())} a cada ${escapeHtml(modeConfig.caseSingular.toLowerCase())} para habilitar el boton.</p>`}
       </footer>
     </div>
   `;
 }
 
-function renderLogiMatchExamResult(result, mipymes) {
+function renderLogiMatchExamResult(result, mipymes, modeConfig) {
   const radius = 56;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.max(0, Math.min(100, result.overallScore)) / 100);
@@ -2610,7 +2631,7 @@ function renderLogiMatchExamResult(result, mipymes) {
             <h4>${escapeHtml(pair.mipymeName)}</h4>
             <span class="logimatch-pair-result-score">${pair.score}%</span>
           </header>
-          <p class="logimatch-pair-result-carrier"><strong>Asignaste:</strong> ${escapeHtml(pair.carrierName)}</p>
+          <p class="logimatch-pair-result-carrier"><strong>${escapeHtml(modeConfig.optionAssignedLabel)}:</strong> ${escapeHtml(pair.carrierName)}</p>
           <p class="logimatch-pair-result-feedback" data-alert="${pair.alert}">
             ${pair.alert ? "🚨 " : ""}${escapeHtml(pair.feedback)}
           </p>
@@ -2657,12 +2678,13 @@ function renderLogiMatchExamResult(result, mipymes) {
       <div class="logimatch-pair-results-grid">${detailCards}</div>
     </section>
 
-    ${renderLogiMatchIdealAnswers(result.pairs)}
+    ${renderLogiMatchIdealAnswers(result.pairs, result.mode)}
   `;
 }
 
-function renderLogiMatchIdealAnswers(pairs) {
-  const ideal = getMatchIdealAnswers();
+function renderLogiMatchIdealAnswers(pairs, mode = "products") {
+  const ideal = getMatchIdealAnswers(mode);
+  const modeConfig = getLogiMatchModeConfig(mode);
   const studentChoices = new Map((pairs || []).map((pair) => [pair.mipymeId, pair]));
 
   const items = ideal
@@ -2699,7 +2721,7 @@ function renderLogiMatchIdealAnswers(pairs) {
         <span class="logimatch-ideal-hint">Abrir para repasar el razonamiento de cada par</span>
       </summary>
       <p class="logimatch-ideal-intro text-muted">
-        Aqui te explicamos por que cada MiPyME tiene su match perfecto, que es lo que necesita y por que las otras opciones fallan.
+        Aqui te explicamos por que cada ${escapeHtml(modeConfig.caseSingular.toLowerCase())} tiene su match perfecto, que es lo que necesita y por que las otras opciones fallan.
         <strong>Si vas a reintentar el examen, mejor cierra esta seccion antes</strong> para no spoilearte las respuestas.
       </p>
       <div class="logimatch-ideal-list">${items}</div>
@@ -3671,6 +3693,22 @@ function handleInput(event) {
     return;
   }
 
+  const matchMode = event.target.closest('[data-input="logimatch-mode"]');
+  if (matchMode && state.activeTool === "logimatch") {
+    const nextMode = matchMode.value === "services" ? "services" : "products";
+    if (nextMode === state.logimatch.mode) {
+      return;
+    }
+    state.logimatch = {
+      ...createDefaultLogiMatchState(nextMode),
+      activeTab: state.logimatch.activeTab,
+      studentName: state.logimatch.studentName,
+    };
+    persistState();
+    render();
+    return;
+  }
+
   const matchStudent = event.target.closest('[data-input="logimatch-student"]');
   if (matchStudent && state.activeTool === "logimatch") {
     state.logimatch = {
@@ -3849,7 +3887,7 @@ function gradeLogiMatchExam() {
     showToast("Completa tu nombre y los 6 pares antes de calificar.");
     return;
   }
-  const result = evaluateMatchAllPairs(state.logimatch.assignments, state.logimatch.studentName);
+  const result = evaluateMatchAllPairs(state.logimatch.assignments, state.logimatch.studentName, state.logimatch.mode);
   state.logimatch = { ...state.logimatch, result };
   persistState();
   render();
@@ -3867,7 +3905,7 @@ function retakeLogiMatchExam() {
 
 function resetLogiMatchExam() {
   state.logimatch = {
-    ...createDefaultLogiMatchState(),
+    ...createDefaultLogiMatchState(state.logimatch.mode),
     activeTab: "exam",
   };
   persistState();
