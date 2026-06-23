@@ -9,6 +9,7 @@ import { buildMockAiAnalysis } from "../lib/ai-analysis.js";
 import { buildMockProductWireframe } from "../lib/product-wireframe.js";
 import { buildMockStoreMessages } from "../lib/store-messages.js";
 import { buildMockLogisticsMessages } from "../lib/logistics-messages.js";
+import { buildMockPlan as buildMockLogiCoachPlan } from "../lib/logicoach.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -243,30 +244,33 @@ try {
   await expectVisible(page.getByRole("heading", { name: /LogiCoach/ }));
   await expectVisible(page.getByText(/Paso 1 · Canales y registro/));
   await page.locator('[data-input="logicoach-email"]').fill("alumno@example.com");
-  await page.locator('[data-input="logicoach-activity"]').fill("Pasteleria artesanal en Aguascalientes con ventas locales");
+  await page.locator('[data-input="logicoach-activity"]').fill("Consultoria de marketing online por videollamada");
+  await page.locator('[data-input="logicoach-offer-type"][value="service"]').check();
+  await expectVisible(page.getByText(/Transacciones y capacidad/));
   await page.getByRole("button", { name: "WhatsApp" }).first().click();
-  await page.locator('textarea[data-question="q2"]').fill("Libreta manual donde anoto numero de pedido y nombre del cliente.");
-  await page.locator('textarea[data-question="q3"]').fill("Nombre, telefono, direccion con CP y comprobante de pago.");
+  await page.locator('textarea[data-question="q2"]').fill("Libreta manual donde anoto solicitud, fecha y nombre del cliente.");
+  await page.locator('textarea[data-question="q3"]').fill("Nombre, correo, objetivo, fecha ideal, archivos necesarios y comprobante de pago.");
   await page.getByRole("button", { name: /Siguiente paso/ }).click();
-  await expectVisible(page.getByText(/Paso 2 · Transacciones/i));
+  await expectVisible(page.getByText(/Paso 2 · Transacciones y capacidad/i));
   await page.locator('textarea[data-question="q4"]').fill("Reviso transferencia bancaria en la app antes de armar.");
-  await page.locator('textarea[data-question="q5"]').fill("A ojo cuando voy a la bodega, sin sistema formal.");
-  await page.locator('textarea[data-question="q6"]').fill("Yo mismo desde casa por la tarde.");
+  await page.locator('textarea[data-question="q5"]').fill("A ojo reviso mi agenda manual, no tengo calendario formal ni cupos semanales.");
+  await page.locator('textarea[data-question="q6"]').fill("Yo mismo entrego por Zoom desde oficina y mando materiales por correo.");
   await page.getByRole("button", { name: /Siguiente paso/ }).click();
-  await expectVisible(page.getByText(/Paso 3 · Empaque/i));
-  await page.locator('textarea[data-question="q7"]').fill("Reviso talla, fotografio el contenido y sello con cinta firmada.");
-  await page.locator('textarea[data-question="q8"]').fill("FedEx terrestre como opcion principal nacional.");
-  await page.locator('textarea[data-question="q9"]').fill("FedEx tambien si la primera falla.");
+  await expectVisible(page.getByText(/Paso 3 · Entrega del servicio/i));
+  await page.locator('textarea[data-question="q7"]').fill("Reviso brief, confirmo pago, link de Zoom, carpeta Drive y recordatorio.");
+  await page.locator('textarea[data-question="q8"]').fill("Zoom como canal principal de entrega.");
+  await page.locator('textarea[data-question="q9"]').fill("Zoom tambien si la primera falla.");
   await page.getByRole("button", { name: /Siguiente paso/ }).click();
   await expectVisible(page.getByText(/Paso 4 · Promesas/i));
   await page.locator('textarea[data-question="q10"]').fill("24 horas habiles desde la confirmacion del pago.");
-  await page.locator('textarea[data-question="q11"]').fill("Aviso al cliente antes de 24h con guia nueva y un detalle de cortesia.");
-  await page.locator('textarea[data-question="q12"]').fill("Porcentaje de pedidos entregados a tiempo y quejas por logistica.");
+  await page.locator('textarea[data-question="q11"]').fill("Aviso al cliente antes de la hora, reagendo y mando link alterno por correo.");
+  await page.locator('textarea[data-question="q12"]').fill("Porcentaje de sesiones entregadas a tiempo, no-shows y NPS post-servicio.");
   await page.getByRole("button", { name: /Generar diagnostico/ }).click();
   await expectVisible(page.getByRole("heading", { name: /Diagnostico final|Optimizado|En desarrollo|Inicial/i }));
+  await expectVisible(page.getByText("Servicio online", { exact: true }));
   await expectVisible(page.getByText(/Riesgo de cuello de botella/));
-  await expectVisible(page.getByText(/Peligro de quiebre de stock/));
-  await expectVisible(page.getByText(/Vulnerabilidad en distribucion/));
+  await expectVisible(page.getByText(/Peligro de sobreventa de agenda/));
+  await expectVisible(page.getByText(/Vulnerabilidad de canal de entrega/));
   await expectVisible(page.getByRole("button", { name: /Copiar formato/ }));
   await page.screenshot({ path: path.join(outputDir, "logicoach.png"), fullPage: true });
 
@@ -391,25 +395,14 @@ function createStaticServer(rootPath) {
       }
 
       if (request.method === "POST" && requestPath === "/api/logicoach-plan") {
+        const body = await readRequestBody(request);
+        const plan = buildMockLogiCoachPlan(body.context);
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(
           JSON.stringify({
             mode: "mock",
             model: "mock",
-            plan: {
-              headline: "Plan inicial para tu pasteleria local",
-              summary: "Tu plan logistico arranca con bases solidas pero hay riesgos en inventario y canales.",
-              strengths: ["Identificas canales claros", "Reconoces el riesgo de stock"],
-              risks: ["Inventario a ojo", "Sin plan B de paqueteria"],
-              thirtyDayPlan: [
-                { week: "Semana 1", focus: "Centralizar pedidos", actions: ["Hoja unica de pedidos"] },
-                { week: "Semana 2", focus: "Inventario controlado", actions: ["Kardex con stock minimo"] },
-                { week: "Semana 3", focus: "Plan logistico B", actions: ["Cuenta alterna de paqueteria"] },
-                { week: "Semana 4", focus: "Medicion semanal", actions: ["KPI de pedidos a tiempo"] },
-              ],
-              checklist: ["Define canal alterno", "Documenta protocolo de retraso"],
-              metrics: ["% a tiempo", "# incidencias"],
-            },
+            plan,
           })
         );
         return;

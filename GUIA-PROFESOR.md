@@ -381,14 +381,22 @@ plan logístico personal del alumno y genera:
 - **Hasta 3 alertas críticas** con keyword matching.
 - **Formato Markdown listo para LMS**.
 
+Antes de responder, el alumno elige el tipo de oferta:
+
+- **Producto físico**: inventario, empaque, paquetería y distribución.
+- **Servicio online**: agenda, canal, acceso, entregables, no-shows y soporte.
+- **Modelo mixto**: combina producto, servicio o entregables digitales.
+
 ### Cómo presentarlo
 
 > "Esta es la herramienta de cierre. Voy a darles 25 minutos para responder
-> 12 preguntas sobre cómo opera su tienda hoy. **Sean honestos** — el sistema
+> 12 preguntas sobre cómo cumplen su promesa al cliente: si venden producto,
+> piensen en inventario, empaque y envío; si venden servicio, piensen en agenda,
+> acceso, entregables y seguimiento. **Sean honestos** — el sistema
 > detecta respuestas vagas y baja la calificación. Cuando terminen, pulsan
 > 'Copiar formato' y pegan en el LMS lo que les sale."
 
-### Las 12 preguntas
+### Las 12 preguntas para producto físico
 
 **Paso 1 · Canales y registro**
 
@@ -428,6 +436,20 @@ textarea. **Acelera muchísimo el llenado.**
    o "No controlo".
 3. **⚠️ Vulnerabilidad en distribución** — si Q8 y Q9 mencionan la misma
    paquetería o Q9 está vacío.
+
+En modo **Servicio online**, las preguntas equivalentes cambian el lenguaje:
+
+- "Inventario" se convierte en **capacidad, agenda o cupos disponibles**.
+- "Quién prepara el pedido" se convierte en **quién entrega el servicio y por qué canal**.
+- "Empaque y logística de envío" se convierte en **entrega del servicio**.
+- "Paquetería principal/alternativa" se convierte en **canal principal/alternativo de entrega**.
+- "Problema con paquetería" se convierte en **retraso, no-show o falla técnica**.
+
+Las alertas también se adaptan:
+
+1. **⚠️ Riesgo de cuello de botella** — si todo vive en WhatsApp, Instagram o libreta.
+2. **🚨 Peligro de sobreventa de agenda** — si no controla cupos, calendario o capacidad.
+3. **⚠️ Vulnerabilidad de canal de entrega** — si no tiene canal alternativo a Zoom/Meet/WhatsApp/correo.
 
 ### Cómo se calcula el score
 

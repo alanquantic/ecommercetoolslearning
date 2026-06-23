@@ -88,6 +88,7 @@ import {
   createDefaultLogiCoachState,
   evaluateLogiCoach,
   getAnsweredCount as getLogiCoachAnsweredCount,
+  getLogiCoachOfferTypes,
   getLogiCoachSteps,
   getMissingQuestionsInStep,
   getStepProgress as getLogiCoachStepProgress,
@@ -2717,17 +2718,35 @@ function renderLogiCoachTool() {
 
 function renderLogiCoachWizard() {
   const coach = state.logicoach;
-  const steps = getLogiCoachSteps();
+  const offerType = coach.offerType || "product";
+  const steps = getLogiCoachSteps(offerType);
   const totalSteps = getLogiCoachTotalSteps();
-  const totalQuestions = getLogiCoachTotalQuestions();
-  const answeredTotal = getLogiCoachAnsweredCount(coach.answers);
+  const totalQuestions = getLogiCoachTotalQuestions(offerType);
+  const answeredTotal = getLogiCoachAnsweredCount(coach.answers, offerType);
   const currentStep = Math.min(coach.currentStep, totalSteps - 1);
   const step = steps[currentStep];
   const overallPercent = Math.round((answeredTotal / totalQuestions) * 100);
+  const offerTypeCards = getLogiCoachOfferTypes()
+    .map(
+      (type) => `
+        <label class="logicoach-offer-card" data-active="${type.id === offerType}">
+          <input
+            type="radio"
+            name="logicoach-offer-type"
+            value="${escapeHtml(type.id)}"
+            data-input="logicoach-offer-type"
+            ${type.id === offerType ? "checked" : ""}
+          >
+          <strong>${escapeHtml(type.label)}</strong>
+          <span>${escapeHtml(type.helper)}</span>
+        </label>
+      `,
+    )
+    .join("");
   const stepDots = steps
     .map(
       (item, index) => `
-        <li class="logicoach-step-dot" data-state="${getStepDotState(index, currentStep, coach.answers)}">
+        <li class="logicoach-step-dot" data-state="${getStepDotState(index, currentStep, coach.answers, offerType)}">
           <span class="logicoach-step-dot-index">${index + 1}</span>
           <span class="logicoach-step-dot-label">${escapeHtml(item.title)}</span>
         </li>
@@ -2736,7 +2755,7 @@ function renderLogiCoachWizard() {
     .join("");
   const questions = step.questions.map((question) => renderLogiCoachQuestion(question, coach.answers)).join("");
   const isLastStep = currentStep === totalSteps - 1;
-  const missingInStep = getMissingQuestionsInStep(coach.answers, currentStep);
+  const missingInStep = getMissingQuestionsInStep(coach.answers, currentStep, offerType);
 
   renderToolShell(`
     <section class="screen panel-enter logicoach-shell">
@@ -2771,6 +2790,10 @@ function renderLogiCoachWizard() {
               data-input="logicoach-activity"
             >
           </label>
+        </div>
+
+        <div class="logicoach-offer-type" role="radiogroup" aria-label="Tipo de oferta">
+          ${offerTypeCards}
         </div>
 
         <div class="logicoach-progress" role="progressbar" aria-valuenow="${overallPercent}" aria-valuemin="0" aria-valuemax="100">
@@ -2849,8 +2872,8 @@ function renderLogiCoachQuestion(question, answers) {
   `;
 }
 
-function getStepDotState(index, currentStep, answers) {
-  const stepProgress = getLogiCoachStepProgress(answers, index);
+function getStepDotState(index, currentStep, answers, offerType = "product") {
+  const stepProgress = getLogiCoachStepProgress(answers, index, offerType);
   if (index < currentStep && stepProgress >= 100) {
     return "complete";
   }
@@ -2876,7 +2899,9 @@ function scrollLogiCoachStepIntoView() {
 function renderLogiCoachResult() {
   const coach = state.logicoach;
   const evaluation = coach.evaluation;
-  const steps = getLogiCoachSteps();
+  const offerType = coach.offerType || evaluation.offerType || "product";
+  const offerTypeLabel = getLogiCoachOfferTypes().find((type) => type.id === offerType)?.label || "Producto fisico";
+  const steps = getLogiCoachSteps(offerType);
   const planSections = steps
     .map((step) => {
       const items = step.questions
@@ -2926,6 +2951,7 @@ function renderLogiCoachResult() {
             <p class="eyebrow">Diagnostico final</p>
             <h2>${escapeHtml(evaluation.level.label)}</h2>
             <p class="text-muted">${escapeHtml(evaluation.level.detail)}</p>
+            <span class="logicoach-result-mode">${escapeHtml(offerTypeLabel)}</span>
           </div>
           <div class="logicoach-result-score" aria-label="Score de madurez">
             <strong>${evaluation.score}</strong>
@@ -3630,6 +3656,21 @@ function handleInput(event) {
     return;
   }
 
+  const coachOfferType = event.target.closest('[data-input="logicoach-offer-type"]');
+  if (coachOfferType && state.activeTool === "logicoach") {
+    state.logicoach = {
+      ...state.logicoach,
+      offerType: coachOfferType.value,
+      plan: null,
+      evaluation: null,
+      planStatus: "idle",
+      deliveryStatus: "idle",
+    };
+    persistState();
+    render();
+    return;
+  }
+
   const matchStudent = event.target.closest('[data-input="logimatch-student"]');
   if (matchStudent && state.activeTool === "logimatch") {
     state.logimatch = {
@@ -3905,12 +3946,12 @@ function generateLogiCoachDiagnostic() {
     showToast("Describe a que se dedica tu negocio antes de generar el diagnostico.");
     return;
   }
-  const answered = getLogiCoachAnsweredCount(state.logicoach.answers);
+  const answered = getLogiCoachAnsweredCount(state.logicoach.answers, state.logicoach.offerType);
   if (answered < 6) {
     showToast("Contesta al menos 6 preguntas antes de generar el diagnostico.");
     return;
   }
-  const evaluation = evaluateLogiCoach(state.logicoach.answers);
+  const evaluation = evaluateLogiCoach(state.logicoach.answers, state.logicoach.offerType);
   state.logicoach = {
     ...state.logicoach,
     stage: "result",
@@ -4004,7 +4045,7 @@ function resetLogiCoach() {
 }
 
 function copyLogiCoachMarkdown() {
-  const evaluation = state.logicoach.evaluation || evaluateLogiCoach(state.logicoach.answers);
+  const evaluation = state.logicoach.evaluation || evaluateLogiCoach(state.logicoach.answers, state.logicoach.offerType);
   state.logicoach = { ...state.logicoach, evaluation };
   const text = buildLogiCoachMarkdown(state.logicoach);
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
